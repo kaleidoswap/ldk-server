@@ -17,12 +17,15 @@ use ldk_server_grpc::types::Bolt11Feature;
 use crate::api::error::LdkServerError;
 use crate::api::error::LdkServerErrorCode::InvalidRequestError;
 
+pub(crate) mod abandon_bolt12_invoice;
 pub(crate) mod bolt11_claim_for_hash;
 pub(crate) mod bolt11_fail_for_hash;
 pub(crate) mod bolt11_receive;
 pub(crate) mod bolt11_receive_for_hash;
 pub(crate) mod bolt11_receive_via_jit_channel;
 pub(crate) mod bolt11_send;
+pub(crate) mod bolt12_fetch_invoice;
+pub(crate) mod bolt12_pay_invoice;
 pub(crate) mod bolt12_receive;
 pub(crate) mod bolt12_send;
 pub(crate) mod close_channel;

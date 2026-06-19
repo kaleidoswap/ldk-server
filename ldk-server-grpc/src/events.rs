@@ -188,14 +188,12 @@ pub struct Bolt12InvoiceReceived {
 	/// `Bolt12FetchInvoice` call and the follow-up `Bolt12PayInvoice` / `AbandonBolt12Invoice`.
 	#[prost(string, tag = "1")]
 	pub payment_id: ::prost::alloc::string::String,
-	/// The fetched BOLT12 invoice, bech32-encoded (`lni...`).
+	/// The hex-encoded 32-byte payment hash of the fetched invoice. The caller can
+	/// bind this to another obligation (e.g. an on-chain HTLC) before paying.
 	#[prost(string, tag = "2")]
-	pub invoice: ::prost::alloc::string::String,
-	/// The hex-encoded 32-byte payment hash of the fetched invoice.
-	#[prost(string, tag = "3")]
 	pub payment_hash: ::prost::alloc::string::String,
 	/// The invoice amount in millisatoshis.
-	#[prost(uint64, tag = "4")]
+	#[prost(uint64, tag = "3")]
 	pub amount_msat: u64,
 }
 /// PaymentClaimable indicates a payment has arrived and is waiting to be manually claimed or failed.
