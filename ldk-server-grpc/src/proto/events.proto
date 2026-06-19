@@ -120,12 +120,11 @@ message Bolt12InvoiceReceived {
   // The hex-encoded payment id correlating this invoice with the originating
   // `Bolt12FetchInvoice` call and the follow-up `Bolt12PayInvoice` / `AbandonBolt12Invoice`.
   string payment_id = 1;
-  // The fetched BOLT12 invoice, bech32-encoded (`lni...`).
-  string invoice = 2;
-  // The hex-encoded 32-byte payment hash of the fetched invoice.
-  string payment_hash = 3;
+  // The hex-encoded 32-byte payment hash of the fetched invoice. The caller can
+  // bind this to another obligation (e.g. an on-chain HTLC) before paying.
+  string payment_hash = 2;
   // The invoice amount in millisatoshis.
-  uint64 amount_msat = 4;
+  uint64 amount_msat = 3;
 }
 
 // PaymentClaimable indicates a payment has arrived and is waiting to be manually claimed or failed.

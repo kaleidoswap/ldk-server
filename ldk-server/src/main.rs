@@ -15,7 +15,7 @@ mod util;
 use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use base64::prelude::BASE64_STANDARD;
@@ -144,6 +144,11 @@ fn main() {
 	ldk_node_config.announcement_addresses = config_file.announcement_addrs;
 	ldk_node_config.network = config_file.network;
 	ldk_node_config.hrn_config = config_file.hrn_config;
+	// Manually handle BOLT12 invoices so the Bolt12FetchInvoice RPC can fetch an
+	// invoice for an offer (and learn its payment hash) without paying. The event
+	// loop auto-pays any invoice not registered as a manual fetch, which preserves
+	// the atomic Bolt12Send semantics.
+	ldk_node_config.manually_handle_bolt12_invoices = true;
 
 	let mut builder = Builder::from_config(ldk_node_config);
 	builder.set_log_facade_logger();
@@ -239,6 +244,10 @@ fn main() {
 
 	let (event_sender, _) = broadcast::channel::<EventEnvelope>(1024);
 	let (shutdown_tx, shutdown_rx) = tokio::sync::watch::channel(false);
+	// Shared between the gRPC handlers (which insert on Bolt12FetchInvoice) and the
+	// event loop (which checks it on Bolt12InvoiceReceived to decide hold-vs-auto-pay).
+	let manual_bolt12_payments: Arc<Mutex<HashSet<PaymentId>>> =
+		Arc::new(Mutex::new(HashSet::new()));
 
 	info!("Starting up...");
 	match node.start() {
@@ -594,6 +603,38 @@ fn main() {
 								}
 							}
 						},
+						Event::Bolt12InvoiceReceived { payment_id, payment_hash, amount_msat } => {
+							let is_manual =
+								manual_bolt12_payments.lock().unwrap().contains(&payment_id);
+							if is_manual {
+								// Fetched via Bolt12FetchInvoice: surface it (with the payment
+								// hash) so the client can bind the hash to another obligation
+								// before an explicit Bolt12PayInvoice / AbandonBolt12Invoice.
+								if let Err(e) = event_sender.send(EventEnvelope {
+									event: Some(event_envelope::Event::Bolt12InvoiceReceived(
+										events::Bolt12InvoiceReceived {
+											payment_id: payment_id.to_string(),
+											payment_hash: payment_hash.0.to_lower_hex_string(),
+											amount_msat,
+										},
+									)),
+								}) {
+									debug!("No event subscribers connected, skipping event: {e}");
+								}
+							} else {
+								// Default (Bolt12Send) path: auto-pay the just-fetched invoice so
+								// the atomic send semantics hold under manual BOLT12 handling.
+								if let Err(e) = event_node
+									.bolt12_payment()
+									.send_payment_for_bolt12_invoice(payment_id)
+								{
+									error!("Failed to auto-pay BOLT12 invoice {payment_id}: {e}");
+								}
+							}
+							if let Err(e) = event_node.event_handled() {
+								error!("Failed to mark event as handled: {e}");
+							}
+						},
 						_ => {
 							if let Err(e) = event_node.event_handled() {
 								error!("Failed to mark event as handled: {e}");
@@ -612,6 +653,7 @@ fn main() {
 								metrics_auth_header.clone(),
 								event_sender.clone(),
 								shutdown_rx.clone(),
+								Arc::clone(&manual_bolt12_payments),
 							);
 							let acceptor = tls_acceptor.clone();
 							runtime.spawn(async move {
