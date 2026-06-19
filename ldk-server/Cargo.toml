@@ -13,7 +13,10 @@ keywords = ["bitcoin", "lightning", "ldk", "server"]
 categories = ["cryptography::cryptocurrencies"]
 
 [dependencies]
-ldk-node = { git = "https://github.com/lightningdevkit/ldk-node", rev = "00dba456a10cb60172eaa74e0a8b11c5e0473dcc" }
+# kaleidoswap fork: ldk-server's pinned ldk-node base (00dba456) + ldk-node#831
+# "manually handle BOLT12 invoices" cherry-picked, for the BOLT12 fetch/pay-invoice
+# RPCs. Drop back to upstream once #831 (or equivalent) lands there.
+ldk-node = { git = "https://github.com/kaleidoswap/ldk-node", rev = "42ffda78fae7e1471c76adcef33da477a6c5e945" }
 serde = { version = "1.0.203", default-features = false, features = ["derive"] }
 hyper = { version = "1", default-features = false, features = ["server", "http2"] }
 http-body-util = { version = "0.1", default-features = false }
