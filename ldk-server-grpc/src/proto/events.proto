@@ -11,6 +11,7 @@ message EventEnvelope {
     PaymentForwarded payment_forwarded = 6;
     PaymentClaimable payment_claimable = 7;
     ChannelStateChanged channel_state_changed = 8;
+    Bolt12InvoiceReceived bolt12_invoice_received = 9;
   }
 }
 
@@ -110,6 +111,21 @@ message PaymentSuccessful {
 message PaymentFailed {
   // The payment details for the payment in event.
   types.Payment payment = 1;
+}
+
+// Bolt12InvoiceReceived indicates an invoice was fetched for a BOLT12 offer and
+// is awaiting an explicit pay/abandon decision. Only emitted when the node runs
+// with `manually_handle_bolt12_invoices = true` (see `Bolt12FetchInvoice`).
+message Bolt12InvoiceReceived {
+  // The hex-encoded payment id correlating this invoice with the originating
+  // `Bolt12FetchInvoice` call and the follow-up `Bolt12PayInvoice` / `AbandonBolt12Invoice`.
+  string payment_id = 1;
+  // The fetched BOLT12 invoice, bech32-encoded (`lni...`).
+  string invoice = 2;
+  // The hex-encoded 32-byte payment hash of the fetched invoice.
+  string payment_hash = 3;
+  // The invoice amount in millisatoshis.
+  uint64 amount_msat = 4;
 }
 
 // PaymentClaimable indicates a payment has arrived and is waiting to be manually claimed or failed.

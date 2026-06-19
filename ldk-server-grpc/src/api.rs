@@ -456,6 +456,94 @@ pub struct Bolt12SendResponse {
 	#[prost(string, tag = "1")]
 	pub payment_id: ::prost::alloc::string::String,
 }
+/// Fetch a BOLT12 invoice for an offer WITHOUT paying it.
+///
+/// Requires the node to run with `manually_handle_bolt12_invoices = true`.
+/// Initiates the offer's invoice-request flow and returns a payment id; the
+/// fetched invoice arrives asynchronously as a `Bolt12InvoiceReceived` event
+/// carrying its payment hash. Pay it later with `Bolt12PayInvoice` (or drop it
+/// with `AbandonBolt12Invoice`). The fetch/pay split lets a caller bind the
+/// invoice's payment hash to another obligation (e.g. an on-chain HTLC in a
+/// submarine swap) before committing to pay.
+/// See more: <https://docs.rs/ldk-node/latest/ldk_node/payment/struct.Bolt12Payment.html#method.send>
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Bolt12FetchInvoiceRequest {
+	/// An offer for a payment within the Lightning Network.
+	#[prost(string, tag = "1")]
+	pub offer: ::prost::alloc::string::String,
+	/// The amount in millisatoshi. Required for variable-amount ("zero-amount") offers.
+	#[prost(uint64, optional, tag = "2")]
+	pub amount_msat: ::core::option::Option<u64>,
+	/// If set, it represents the number of items requested.
+	#[prost(uint64, optional, tag = "3")]
+	pub quantity: ::core::option::Option<u64>,
+	/// If set, it will be seen by the recipient and reflected back in the invoice.
+	#[prost(string, optional, tag = "4")]
+	pub payer_note: ::core::option::Option<::prost::alloc::string::String>,
+	/// Configuration options for payment routing and pathfinding.
+	#[prost(message, optional, tag = "5")]
+	pub route_parameters: ::core::option::Option<super::types::RouteParametersConfig>,
+}
+/// The response for the `Bolt12FetchInvoice` RPC. On failure, a gRPC error status is returned.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Bolt12FetchInvoiceResponse {
+	/// The hex-encoded payment id correlating the later `Bolt12InvoiceReceived`
+	/// event and the follow-up `Bolt12PayInvoice` / `AbandonBolt12Invoice` calls.
+	#[prost(string, tag = "1")]
+	pub payment_id: ::prost::alloc::string::String,
+}
+/// Pay a BOLT12 invoice previously fetched via `Bolt12FetchInvoice`, identified
+/// by its payment id (delivered on the `Bolt12InvoiceReceived` event).
+/// See more: <https://docs.rs/ldk-node/latest/ldk_node/payment/struct.Bolt12Payment.html#method.send_payment_for_bolt12_invoice>
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Bolt12PayInvoiceRequest {
+	/// The hex-encoded payment id from `Bolt12FetchInvoice` / `Bolt12InvoiceReceived`.
+	#[prost(string, tag = "1")]
+	pub payment_id: ::prost::alloc::string::String,
+}
+/// The response for the `Bolt12PayInvoice` RPC. On failure, a gRPC error status is returned.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Bolt12PayInvoiceResponse {
+	/// The hex-encoded payment id of the in-flight payment.
+	#[prost(string, tag = "1")]
+	pub payment_id: ::prost::alloc::string::String,
+}
+/// Abandon a BOLT12 invoice previously fetched via `Bolt12FetchInvoice` without
+/// paying it, releasing the node's tracking of that payment id.
+/// See more: <https://docs.rs/ldk-node/latest/ldk_node/payment/struct.Bolt12Payment.html#method.abandon_bolt12_invoice>
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AbandonBolt12InvoiceRequest {
+	/// The hex-encoded payment id from `Bolt12FetchInvoice` / `Bolt12InvoiceReceived`.
+	#[prost(string, tag = "1")]
+	pub payment_id: ::prost::alloc::string::String,
+}
+/// The response for the `AbandonBolt12Invoice` RPC. On failure, a gRPC error status is returned.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AbandonBolt12InvoiceResponse {}
 /// Send a spontaneous payment, also known as "keysend", to a node.
 /// See more: <https://docs.rs/ldk-node/latest/ldk_node/payment/struct.SpontaneousPayment.html#method.send>
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
