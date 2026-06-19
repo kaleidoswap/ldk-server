@@ -13,6 +13,8 @@ message EventEnvelope {
     ChannelStateChanged channel_state_changed = 8;
     SpliceNegotiated splice_negotiated = 9;
     SpliceNegotiationFailed splice_negotiation_failed = 10;
+    // Fork-only event: a high tag keeps it clear of upstream additions.
+    Bolt12InvoiceReceived bolt12_invoice_received = 100;
   }
 }
 
@@ -233,4 +235,19 @@ message PaymentForwarded {
   // The time the server handles the event, in seconds since the Unix epoch.
   // This can be later than the stored forwarding time, including after a restart.
   uint64 observed_at_timestamp = 7;
+}
+
+// Bolt12InvoiceReceived indicates an invoice was fetched for a BOLT12 offer and
+// is awaiting an explicit pay/abandon decision. Only emitted when the node runs
+// with `manually_handle_bolt12_invoices = true` (see `Bolt12FetchInvoice`).
+message Bolt12InvoiceReceived {
+  // The hex-encoded payment id correlating this invoice with the originating
+  // `Bolt12FetchInvoice` call and the follow-up `Bolt12PayInvoice` / `AbandonBolt12Invoice`.
+  string payment_id = 1;
+  // The fetched BOLT12 invoice, bech32-encoded (`lni...`).
+  string invoice = 2;
+  // The hex-encoded 32-byte payment hash of the fetched invoice.
+  string payment_hash = 3;
+  // The invoice amount in millisatoshis.
+  uint64 amount_msat = 4;
 }
