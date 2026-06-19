@@ -14,7 +14,7 @@
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EventEnvelope {
-	#[prost(oneof = "event_envelope::Event", tags = "2, 3, 4, 6, 7, 8, 9, 10")]
+	#[prost(oneof = "event_envelope::Event", tags = "2, 3, 4, 6, 7, 8, 9, 10, 100")]
 	pub event: ::core::option::Option<event_envelope::Event>,
 }
 /// Nested message and enum types in `EventEnvelope`.
@@ -40,6 +40,9 @@ pub mod event_envelope {
 		SpliceNegotiated(super::SpliceNegotiated),
 		#[prost(message, tag = "10")]
 		SpliceNegotiationFailed(super::SpliceNegotiationFailed),
+		/// Fork-only event: a high tag keeps it clear of upstream additions.
+		#[prost(message, tag = "100")]
+		Bolt12InvoiceReceived(super::Bolt12InvoiceReceived),
 	}
 }
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -308,6 +311,29 @@ pub struct PaymentForwarded {
 	/// This can be later than the stored forwarding time, including after a restart.
 	#[prost(uint64, tag = "7")]
 	pub observed_at_timestamp: u64,
+}
+/// Bolt12InvoiceReceived indicates an invoice was fetched for a BOLT12 offer and
+/// is awaiting an explicit pay/abandon decision. Only emitted when the node runs
+/// with `manually_handle_bolt12_invoices = true` (see `Bolt12FetchInvoice`).
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Bolt12InvoiceReceived {
+	/// The hex-encoded payment id correlating this invoice with the originating
+	/// `Bolt12FetchInvoice` call and the follow-up `Bolt12PayInvoice` / `AbandonBolt12Invoice`.
+	#[prost(string, tag = "1")]
+	pub payment_id: ::prost::alloc::string::String,
+	/// The fetched BOLT12 invoice, bech32-encoded (`lni...`).
+	#[prost(string, tag = "2")]
+	pub invoice: ::prost::alloc::string::String,
+	/// The hex-encoded 32-byte payment hash of the fetched invoice.
+	#[prost(string, tag = "3")]
+	pub payment_hash: ::prost::alloc::string::String,
+	/// The invoice amount in millisatoshis.
+	#[prost(uint64, tag = "4")]
+	pub amount_msat: u64,
 }
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
