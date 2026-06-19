@@ -362,6 +362,71 @@ message Bolt12SendResponse {
   string payment_id = 1;
 }
 
+// Fetch a BOLT12 invoice for an offer WITHOUT paying it.
+//
+// Requires the node to run with `manually_handle_bolt12_invoices = true`.
+// Initiates the offer's invoice-request flow and returns a payment id; the
+// fetched invoice arrives asynchronously as a `Bolt12InvoiceReceived` event
+// carrying its payment hash. Pay it later with `Bolt12PayInvoice` (or drop it
+// with `AbandonBolt12Invoice`). The fetch/pay split lets a caller bind the
+// invoice's payment hash to another obligation (e.g. an on-chain HTLC in a
+// submarine swap) before committing to pay.
+// See more: https://docs.rs/ldk-node/latest/ldk_node/payment/struct.Bolt12Payment.html#method.send
+message Bolt12FetchInvoiceRequest {
+
+  // An offer for a payment within the Lightning Network.
+  string offer = 1;
+
+  // The amount in millisatoshi. Required for variable-amount ("zero-amount") offers.
+  optional uint64 amount_msat = 2;
+
+  // If set, it represents the number of items requested.
+  optional uint64 quantity = 3;
+
+  // If set, it will be seen by the recipient and reflected back in the invoice.
+  optional string payer_note = 4;
+
+  // Configuration options for payment routing and pathfinding.
+  optional types.RouteParametersConfig route_parameters = 5;
+}
+
+// The response for the `Bolt12FetchInvoice` RPC. On failure, a gRPC error status is returned.
+message Bolt12FetchInvoiceResponse {
+
+  // The hex-encoded payment id correlating the later `Bolt12InvoiceReceived`
+  // event and the follow-up `Bolt12PayInvoice` / `AbandonBolt12Invoice` calls.
+  string payment_id = 1;
+}
+
+// Pay a BOLT12 invoice previously fetched via `Bolt12FetchInvoice`, identified
+// by its payment id (delivered on the `Bolt12InvoiceReceived` event).
+// See more: https://docs.rs/ldk-node/latest/ldk_node/payment/struct.Bolt12Payment.html#method.send_payment_for_bolt12_invoice
+message Bolt12PayInvoiceRequest {
+
+  // The hex-encoded payment id from `Bolt12FetchInvoice` / `Bolt12InvoiceReceived`.
+  string payment_id = 1;
+}
+
+// The response for the `Bolt12PayInvoice` RPC. On failure, a gRPC error status is returned.
+message Bolt12PayInvoiceResponse {
+
+  // The hex-encoded payment id of the in-flight payment.
+  string payment_id = 1;
+}
+
+// Abandon a BOLT12 invoice previously fetched via `Bolt12FetchInvoice` without
+// paying it, releasing the node's tracking of that payment id.
+// See more: https://docs.rs/ldk-node/latest/ldk_node/payment/struct.Bolt12Payment.html#method.abandon_bolt12_invoice
+message AbandonBolt12InvoiceRequest {
+
+  // The hex-encoded payment id from `Bolt12FetchInvoice` / `Bolt12InvoiceReceived`.
+  string payment_id = 1;
+}
+
+// The response for the `AbandonBolt12Invoice` RPC. On failure, a gRPC error status is returned.
+message AbandonBolt12InvoiceResponse {
+}
+
 // Send a spontaneous payment, also known as "keysend", to a node.
 // See more: https://docs.rs/ldk-node/latest/ldk_node/payment/struct.SpontaneousPayment.html#method.send
 message SpontaneousSendRequest {
@@ -931,6 +996,12 @@ service LightningNode {
   rpc Bolt12Receive(Bolt12ReceiveRequest) returns (Bolt12ReceiveResponse);
   // Send a payment for a BOLT12 offer.
   rpc Bolt12Send(Bolt12SendRequest) returns (Bolt12SendResponse);
+  // Fetch a BOLT12 invoice for an offer without paying it.
+  rpc Bolt12FetchInvoice(Bolt12FetchInvoiceRequest) returns (Bolt12FetchInvoiceResponse);
+  // Pay a BOLT12 invoice previously fetched via Bolt12FetchInvoice.
+  rpc Bolt12PayInvoice(Bolt12PayInvoiceRequest) returns (Bolt12PayInvoiceResponse);
+  // Abandon a BOLT12 invoice previously fetched via Bolt12FetchInvoice.
+  rpc AbandonBolt12Invoice(AbandonBolt12InvoiceRequest) returns (AbandonBolt12InvoiceResponse);
   // Send a spontaneous payment (keysend).
   rpc SpontaneousSend(SpontaneousSendRequest) returns (SpontaneousSendResponse);
   // Create a new outbound channel.
