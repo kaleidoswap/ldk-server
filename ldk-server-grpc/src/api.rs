@@ -214,6 +214,11 @@ pub struct Bolt11ReceiveForHashRequest {
 	/// The hex-encoded 32-byte payment hash to use for the invoice.
 	#[prost(string, tag = "4")]
 	pub payment_hash: ::prost::alloc::string::String,
+	/// If set, pins the invoice's advertised final-hop CLTV expiry delta, in blocks.
+	/// Must fit in 16 bits and be at least the node's minimum (currently 42); the node adds a
+	/// small block buffer on top. If unset, the node's default is used.
+	#[prost(uint32, optional, tag = "5")]
+	pub min_final_cltv_expiry_delta: ::core::option::Option<u32>,
 }
 /// The response for the `Bolt11ReceiveForHash` RPC. On failure, a gRPC error status is returned.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

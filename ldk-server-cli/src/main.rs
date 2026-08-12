@@ -660,6 +660,7 @@ async fn main() {
 				expiry_secs,
 				amount_msat,
 				payment_hash,
+				min_final_cltv_expiry_delta: None,
 			};
 
 			handle_response_result::<_, Bolt11ReceiveForHashResponse>(

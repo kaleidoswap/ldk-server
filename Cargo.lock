@@ -1203,7 +1203,7 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 [[package]]
 name = "ldk-node"
 version = "0.8.0+git"
-source = "git+https://github.com/lightningdevkit/ldk-node?rev=16eaa6f46308965f501904506be3ceecd293f358#16eaa6f46308965f501904506be3ceecd293f358"
+source = "git+https://github.com/kaleidoswap/ldk-node?rev=c4482d698afb7c3c085f66ce340420f86cb1ef6b#c4482d698afb7c3c085f66ce340420f86cb1ef6b"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
