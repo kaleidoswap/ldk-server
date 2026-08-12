@@ -30,8 +30,8 @@ use ldk_node::lightning_invoice::Bolt11Invoice;
 use ldk_server_client::error::LdkServerErrorCode::{InvalidRequestError, LightningError};
 use ldk_server_client::ldk_server_grpc::api::{
 	onchain_send_request, open_channel_request, Bolt11ClaimForIdRequest, Bolt11FailForIdRequest,
-	Bolt11ReceiveRequest, Bolt11SendProbesRequest, Bolt11SendRequest, Bolt12ReceiveRequest,
-	BumpChannelFundingFeeRequest, GetChannelForwardingStatsRequest,
+	Bolt11ReceiveForHashRequest, Bolt11ReceiveRequest, Bolt11SendProbesRequest, Bolt11SendRequest,
+	Bolt12ReceiveRequest, BumpChannelFundingFeeRequest, GetChannelForwardingStatsRequest,
 	GetForwardedPaymentDetailsRequest, GetPaymentDetailsRequest, ListChannelForwardingStatsRequest,
 	ListChannelPairForwardingStatsRequest, ListChannelsRequest, ListForwardedPaymentsRequest,
 	OnchainBumpFeeRequest, OnchainReceiveRequest, OnchainSendRequest, OpenChannelRequest,
@@ -1272,6 +1272,58 @@ async fn test_payment_preflight_probes() {
 	let payment_ids_after: Vec<_> =
 		list_payments(&server_a).await.into_iter().map(|payment| payment.payment_id).collect();
 	assert_eq!(payment_ids_after, payment_ids_before);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 1)]
+async fn test_bolt11_receive_for_hash_min_final_cltv_expiry_delta() {
+	let bitcoind = TestBitcoind::new();
+	let server = LdkServerHandle::start(&bitcoind).await;
+
+	let request = |payment_hash: &str, amount_msat, delta| Bolt11ReceiveForHashRequest {
+		amount_msat,
+		description: Some(Bolt11InvoiceDescription {
+			kind: Some(bolt11_invoice_description::Kind::Direct("hold".to_string())),
+		}),
+		expiry_secs: 3600,
+		payment_hash: payment_hash.to_string(),
+		min_final_cltv_expiry_delta: delta,
+	};
+	let advertised_delta =
+		|invoice: &str| Bolt11Invoice::from_str(invoice).unwrap().min_final_cltv_expiry_delta();
+
+	let default_invoice = server
+		.client()
+		.bolt11_receive_for_hash(request(&"11".repeat(32), Some(1_000_000), None))
+		.await
+		.unwrap();
+	let pinned_invoice = server
+		.client()
+		.bolt11_receive_for_hash(request(&"22".repeat(32), Some(1_000_000), Some(144)))
+		.await
+		.unwrap();
+
+	// The pin travels to the minted invoice: it advertises at least the requested window, and
+	// more than the node's default.
+	let default_delta = advertised_delta(&default_invoice.invoice);
+	let pinned_delta = advertised_delta(&pinned_invoice.invoice);
+	assert!(pinned_delta >= 144, "pinned invoice advertises {pinned_delta}");
+	assert!(pinned_delta > default_delta, "pinned {pinned_delta}, default {default_delta}");
+
+	// A delta that does not fit in 16 bits and one on a variable-amount invoice are refused as
+	// invalid requests, and one below the node's minimum is refused by the node, instead of any
+	// of them being silently dropped.
+	for (hash, amount_msat, delta, expected) in [
+		("33".repeat(32), Some(1_000_000), 70_000, InvalidRequestError),
+		("44".repeat(32), Some(1_000_000), 1, LightningError),
+		("55".repeat(32), None, 144, InvalidRequestError),
+	] {
+		let error = server
+			.client()
+			.bolt11_receive_for_hash(request(&hash, amount_msat, Some(delta)))
+			.await
+			.unwrap_err();
+		assert_eq!(error.error_code, expected, "delta {delta}, amount {amount_msat:?}");
+	}
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
