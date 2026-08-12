@@ -30,17 +30,31 @@ pub(crate) async fn handle_bolt11_receive_for_hash_request(
 	})?;
 	let payment_hash = PaymentHash(hash_bytes);
 
+	let min_final_cltv_expiry_delta = request
+		.min_final_cltv_expiry_delta
+		.map(|delta| {
+			u16::try_from(delta).map_err(|_| {
+				LdkServerError::new(
+					InvalidRequestError,
+					"Invalid min_final_cltv_expiry_delta, must fit in 16 bits.".to_string(),
+				)
+			})
+		})
+		.transpose()?;
+
 	let invoice = match request.amount_msat {
 		Some(amount_msat) => context.node.bolt11_payment().receive_for_hash(
 			amount_msat,
 			&description,
 			request.expiry_secs,
 			payment_hash,
+			min_final_cltv_expiry_delta,
 		)?,
 		None => context.node.bolt11_payment().receive_variable_amount_for_hash(
 			&description,
 			request.expiry_secs,
 			payment_hash,
+			min_final_cltv_expiry_delta,
 		)?,
 	};
 
