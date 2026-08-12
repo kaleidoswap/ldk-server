@@ -30,18 +30,45 @@ pub(crate) async fn handle_bolt11_receive_for_hash_request(
 	})?;
 	let payment_hash = PaymentHash(hash_bytes);
 
-	let invoice = match request.amount_msat {
-		Some(amount_msat) => context.node.bolt11_payment().receive_for_hash(
+	let min_final_cltv_expiry_delta = request
+		.min_final_cltv_expiry_delta
+		.map(|delta| {
+			u16::try_from(delta).map_err(|_| {
+				LdkServerError::new(
+					InvalidRequestError,
+					"Invalid min_final_cltv_expiry_delta, must fit in 16 bits.".to_string(),
+				)
+			})
+		})
+		.transpose()?;
+
+	let payments = context.node.bolt11_payment();
+	let invoice = match (request.amount_msat, min_final_cltv_expiry_delta) {
+		(Some(amount_msat), Some(delta)) => payments
+			.receive_for_hash_with_min_final_cltv_expiry_delta(
+				amount_msat,
+				&description,
+				request.expiry_secs,
+				payment_hash,
+				delta,
+			)?,
+		(Some(amount_msat), None) => payments.receive_for_hash(
 			amount_msat,
 			&description,
 			request.expiry_secs,
 			payment_hash,
 		)?,
-		None => context.node.bolt11_payment().receive_variable_amount_for_hash(
+		(None, None) => payments.receive_variable_amount_for_hash(
 			&description,
 			request.expiry_secs,
 			payment_hash,
 		)?,
+		(None, Some(_)) => {
+			return Err(LdkServerError::new(
+				InvalidRequestError,
+				"min_final_cltv_expiry_delta requires amount_msat.".to_string(),
+			))
+		},
 	};
 
 	Ok(Bolt11ReceiveForHashResponse { invoice: invoice.to_string() })
