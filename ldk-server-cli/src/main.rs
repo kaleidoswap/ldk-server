@@ -160,6 +160,11 @@ enum Commands {
 		description_hash: Option<String>,
 		#[arg(short, long, help = "Invoice expiry time in seconds (default: 86400)")]
 		expiry_secs: Option<u32>,
+		#[arg(
+			long,
+			help = "Pin the invoice's advertised final-hop CLTV expiry delta, in blocks (must fit in 16 bits)"
+		)]
+		min_final_cltv_expiry_delta: Option<u32>,
 	},
 	#[command(about = "Claim a held payment by providing the preimage")]
 	Bolt11ClaimForHash {
@@ -655,6 +660,7 @@ async fn main() {
 			description,
 			description_hash,
 			expiry_secs,
+			min_final_cltv_expiry_delta,
 		} => {
 			let amount_msat = amount.map(|a| a.to_msat());
 			let invoice_description = match (description, description_hash) {
@@ -679,6 +685,7 @@ async fn main() {
 				expiry_secs,
 				amount_msat,
 				payment_hash,
+				min_final_cltv_expiry_delta,
 			};
 
 			handle_response_result::<_, Bolt11ReceiveForHashResponse>(
