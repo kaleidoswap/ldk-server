@@ -1001,7 +1001,7 @@ dependencies = [
  "libc",
  "percent-encoding",
  "pin-project-lite",
- "socket2 0.5.10",
+ "socket2 0.6.1",
  "tokio",
  "tower-service",
  "tracing",
@@ -1203,7 +1203,7 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 [[package]]
 name = "ldk-node"
 version = "0.8.0+git"
-source = "git+https://github.com/kaleidoswap/ldk-node?rev=c4482d698afb7c3c085f66ce340420f86cb1ef6b#c4482d698afb7c3c085f66ce340420f86cb1ef6b"
+source = "git+https://github.com/kaleidoswap/ldk-node?rev=b8d626e5a025ebee372546255e4770feaedcdeb7#b8d626e5a025ebee372546255e4770feaedcdeb7"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -1759,7 +1759,7 @@ dependencies = [
  "quinn-udp",
  "rustc-hash",
  "rustls 0.23.34",
- "socket2 0.5.10",
+ "socket2 0.6.1",
  "thiserror",
  "tokio",
  "tracing",
@@ -1796,7 +1796,7 @@ dependencies = [
  "cfg_aliases",
  "libc",
  "once_cell",
- "socket2 0.5.10",
+ "socket2 0.6.1",
  "tracing",
  "windows-sys 0.60.2",
 ]

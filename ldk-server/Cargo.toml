@@ -4,7 +4,11 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-ldk-node = { git = "https://github.com/kaleidoswap/ldk-node", rev = "c4482d698afb7c3c085f66ce340420f86cb1ef6b" }
+# kaleidoswap fork: c4482d69 (upstream 16eaa6f4 + per-invoice min_final_cltv) plus
+# ldk-node#831 "manually handle BOLT12 invoices" cherry-picked on top, for the
+# BOLT12 fetch/pay-invoice RPCs. Deliberately NOT the 00dba456-based branch:
+# that base carries the one-way FileSystemStoreV2 migration.
+ldk-node = { git = "https://github.com/kaleidoswap/ldk-node", rev = "b8d626e5a025ebee372546255e4770feaedcdeb7" }
 serde = { version = "1.0.203", default-features = false, features = ["derive"] }
 hyper = { version = "1", default-features = false, features = ["server", "http2"] }
 http-body-util = { version = "0.1", default-features = false }
