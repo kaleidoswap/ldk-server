@@ -33,7 +33,8 @@ use ldk_server_client::ldk_server_grpc::api::{
 	DecodeInvoiceRequest, DecodeInvoiceResponse, DecodeOfferRequest, DecodeOfferResponse,
 	DisconnectPeerRequest, DisconnectPeerResponse, ExportPathfindingScoresRequest,
 	ForceCloseChannelRequest, ForceCloseChannelResponse, GetBalancesRequest, GetBalancesResponse,
-	GetNodeInfoRequest, GetNodeInfoResponse, GetPaymentDetailsRequest, GetPaymentDetailsResponse,
+	GetFinancialInventoryRequest, GetFinancialInventoryResponse, GetNodeInfoRequest,
+	GetNodeInfoResponse, GetPaymentDetailsRequest, GetPaymentDetailsResponse,
 	GraphGetChannelRequest, GraphGetChannelResponse, GraphGetNodeRequest, GraphGetNodeResponse,
 	GraphListChannelsRequest, GraphListChannelsResponse, GraphListNodesRequest,
 	GraphListNodesResponse, ListChannelsRequest, ListChannelsResponse,
@@ -104,6 +105,8 @@ enum Commands {
 	GetNodeInfo,
 	#[command(about = "Retrieve an overview of all known balances")]
 	GetBalances,
+	/// Read-only UTXO, HTLC, monitor and sweep evidence (not an atomic balance).
+	GetFinancialInventory,
 	#[command(about = "Retrieve a new on-chain funding address")]
 	OnchainReceive,
 	#[command(about = "Send an on-chain payment to the given address")]
@@ -592,6 +595,11 @@ async fn main() {
 		Commands::GetNodeInfo => {
 			handle_response_result::<_, GetNodeInfoResponse>(
 				client.get_node_info(GetNodeInfoRequest {}).await,
+			);
+		},
+		Commands::GetFinancialInventory => {
+			handle_response_result::<_, GetFinancialInventoryResponse>(
+				client.get_financial_inventory(GetFinancialInventoryRequest {}).await,
 			);
 		},
 		Commands::GetBalances => {

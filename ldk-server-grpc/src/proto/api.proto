@@ -974,6 +974,7 @@ service LightningNode {
   rpc GetNodeInfo(GetNodeInfoRequest) returns (GetNodeInfoResponse);
   // Retrieve an overview of all known balances.
   rpc GetBalances(GetBalancesRequest) returns (GetBalancesResponse);
+  rpc GetFinancialInventory(GetFinancialInventoryRequest) returns (GetFinancialInventoryResponse);
   // Retrieve a new on-chain funding address.
   rpc OnchainReceive(OnchainReceiveRequest) returns (OnchainReceiveResponse);
   // Send an on-chain payment to the given address.
@@ -1052,4 +1053,161 @@ service LightningNode {
   rpc GraphGetNode(GraphGetNodeRequest) returns (GraphGetNodeResponse);
   // Subscribe to a stream of server events.
   rpc SubscribeEvents(SubscribeEventsRequest) returns (stream events.EventEnvelope);
+}
+
+// Read-only evidence, not a claim of globally atomic or complete ownership.
+message GetFinancialInventoryRequest {}
+message InventoryTip {
+  // Block hash in display order.
+  string hash = 1;
+  // Block height.
+  uint32 height = 2;
+}
+message InventoryOutput {
+  // Transaction ID in display order.
+  string txid = 1;
+  // Output index.
+  uint32 vout = 2;
+  // Output amount in satoshis.
+  uint64 value_sat = 3;
+  // Hex encoded locking script.
+  string script_pubkey = 4;
+}
+message InventoryUtxo {
+  // Wallet-owned unspent output.
+  InventoryOutput output = 1;
+  // Direct or transitive confirmation anchor; absent for unconfirmed outputs.
+  optional InventoryTip confirmation = 2;
+  // Descendant transaction proving confirmation, if direct confirmation is unknown.
+  optional string transitively = 3;
+  // First mempool observation, UNIX seconds.
+  optional uint64 first_seen = 4;
+  // Latest mempool observation, UNIX seconds.
+  optional uint64 last_seen = 5;
+}
+message WalletInventory {
+  // Wallet chain anchor collected under the UTXO lock.
+  InventoryTip tip = 1;
+  // All wallet unspent outputs; not necessarily spendable.
+  repeated InventoryUtxo utxos = 2;
+}
+message InventoryHtlc {
+  // True for an incoming HTLC.
+  bool inbound = 1;
+  // Channel-local HTLC identifier; absent before assignment.
+  optional uint64 htlc_id = 2;
+  // Conditional amount in millisatoshis, not unconditional ownership.
+  uint64 amount_msat = 3;
+  // Payment hash only, never its preimage.
+  string payment_hash = 4;
+  // Absolute expiry height.
+  uint32 cltv_expiry = 5;
+  // LDK HTLC state; absent when unavailable.
+  optional string state = 6;
+  // Whether the HTLC is trimmed on commitment.
+  bool is_dust = 7;
+  // Outbound skimmed fee, when available.
+  optional uint64 skimmed_fee_msat = 8;
+}
+message InventoryChannel {
+  // Channel identifier.
+  string channel_id = 1;
+  // Peer public key.
+  string counterparty_node_id = 2;
+  // Current funding output; includes the peer share and is not our owned balance.
+  optional InventoryOutput funding = 3;
+  // Pending conditional transfers.
+  repeated InventoryHtlc htlcs = 4;
+}
+message InventoryCandidate {
+  // Claimable amount excluding commitment fee.
+  uint64 amount_sat = 1;
+  // Commitment fee, including applicable dust and rounding.
+  uint64 transaction_fee_sat = 2;
+}
+message InventoryClaim {
+  // LDK claim category; conditional categories must remain conditional.
+  string kind = 1;
+  // Claim amount when not represented by candidates.
+  optional uint64 amount_sat = 2;
+  // Category-specific confirmation, timeout, claimable or expiry height.
+  optional uint32 height = 3;
+  // HTLC payment hash, never its preimage.
+  optional string payment_hash = 4;
+  // Whether timeout claim originated as a payment rather than forwarding.
+  optional bool outbound_payment = 5;
+  // Close or HTLC source for confirmation claims.
+  optional string source = 6;
+  // All alternative commitments; never sum candidates.
+  repeated InventoryCandidate candidates = 7;
+  // LDK confirmed candidate index; zero does not select the latest splice.
+  optional uint64 confirmed_candidate_index = 8;
+  // LDK outbound payment rounding component.
+  optional uint64 outbound_payment_rounded_msat = 9;
+  // LDK forwarded rounding component.
+  optional uint64 outbound_forwarded_rounded_msat = 10;
+  // LDK inbound claiming rounding component.
+  optional uint64 inbound_claiming_rounded_msat = 11;
+  // LDK unclaimed inbound rounding component.
+  optional uint64 inbound_rounded_msat = 12;
+}
+message InventoryMonitor {
+  // Monitored channel identifier.
+  string channel_id = 1;
+  // Monitored funding transaction ID.
+  string funding_txid = 2;
+  // Monitored funding output index.
+  uint32 funding_vout = 3;
+  // Monitor chain anchor.
+  InventoryTip tip = 4;
+  // Claim evidence; does not assert accounting ownership.
+  repeated InventoryClaim claims = 5;
+}
+message InventorySweep {
+  // Original output being swept, for overlap detection.
+  InventoryOutput output = 1;
+  // Originating channel when known.
+  optional string channel_id = 2;
+  // pending_broadcast, pending_confirmation or confirmed.
+  string state = 3;
+  // Latest spending transaction ID, if any.
+  optional string spending_txid = 4;
+  // Spending transaction confirmation, if any.
+  optional InventoryTip confirmation = 5;
+  // Earliest broadcast height, if delayed.
+  optional uint32 delayed_until_height = 6;
+}
+message GetFinancialInventoryResponse {
+  // Version 1. Reject unsupported versions.
+  uint32 schema_version = 1;
+  // Node public key.
+  string node_id = 2;
+  // Bitcoin network name.
+  string network = 3;
+  // Collection start time, UNIX milliseconds.
+  uint64 started_at_ms = 4;
+  // Collection end time, UNIX milliseconds.
+  uint64 finished_at_ms = 5;
+  // Channel-manager anchor before collection.
+  InventoryTip node_tip_before = 6;
+  // Channel-manager anchor after collection.
+  InventoryTip node_tip_after = 7;
+  // Wallet evidence collected under one lock.
+  WalletInventory wallet = 8;
+  // Channel and pending HTLC evidence.
+  repeated InventoryChannel channels = 9;
+  // Monitor claims and anchors.
+  repeated InventoryMonitor monitors = 10;
+  // Output sweeper chain anchor.
+  InventoryTip sweeper_tip = 11;
+  // Tracked output sweep evidence.
+  repeated InventorySweep sweeps = 12;
+  // Explicit observation failures or changes. Empty does not imply atomicity.
+  repeated string gaps = 13;
+  // Always false: component locks do not form a global snapshot.
+  bool atomic = 14;
+  // Last successful on-chain sync, UNIX seconds.
+  optional uint64 latest_wallet_sync = 15;
+  // Last successful Lightning sync, UNIX seconds.
+  optional uint64 latest_lightning_sync = 16;
 }
