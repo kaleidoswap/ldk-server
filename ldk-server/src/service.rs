@@ -27,8 +27,8 @@ use ldk_server_grpc::endpoints::{
 	BOLT11_SEND_PATH, BOLT12_FETCH_INVOICE_PATH, BOLT12_PAY_INVOICE_PATH, BOLT12_RECEIVE_PATH,
 	BOLT12_SEND_PATH, CLOSE_CHANNEL_PATH, CONNECT_PEER_PATH, DECODE_INVOICE_PATH,
 	DECODE_OFFER_PATH, DISCONNECT_PEER_PATH, EXPORT_PATHFINDING_SCORES_PATH,
-	FORCE_CLOSE_CHANNEL_PATH, GET_BALANCES_PATH, GET_METRICS_PATH, GET_NODE_INFO_PATH,
-	GET_PAYMENT_DETAILS_PATH, GRAPH_GET_CHANNEL_PATH, GRAPH_GET_NODE_PATH,
+	FORCE_CLOSE_CHANNEL_PATH, GET_BALANCES_PATH, GET_FINANCIAL_INVENTORY_PATH, GET_METRICS_PATH,
+	GET_NODE_INFO_PATH, GET_PAYMENT_DETAILS_PATH, GRAPH_GET_CHANNEL_PATH, GRAPH_GET_NODE_PATH,
 	GRAPH_LIST_CHANNELS_PATH, GRAPH_LIST_NODES_PATH, LIST_CHANNELS_PATH,
 	LIST_FORWARDED_PAYMENTS_PATH, LIST_PAYMENTS_PATH, LIST_PEERS_PATH, ONCHAIN_RECEIVE_PATH,
 	ONCHAIN_SEND_PATH, OPEN_CHANNEL_PATH, SIGN_MESSAGE_PATH, SPLICE_IN_PATH, SPLICE_OUT_PATH,
@@ -67,6 +67,7 @@ use crate::api::disconnect_peer::handle_disconnect_peer;
 use crate::api::error::{LdkServerError, LdkServerErrorCode};
 use crate::api::export_pathfinding_scores::handle_export_pathfinding_scores_request;
 use crate::api::get_balances::handle_get_balances_request;
+use crate::api::get_financial_inventory::handle_get_financial_inventory_request;
 use crate::api::get_node_info::handle_get_node_info_request;
 use crate::api::get_payment_details::handle_get_payment_details_request;
 use crate::api::graph_get_channel::handle_graph_get_channel_request;
@@ -106,6 +107,8 @@ pub(crate) struct NodeService {
 }
 
 impl NodeService {
+	// Explicit wiring keeps authentication and event state visible at construction.
+	#[allow(clippy::too_many_arguments)]
 	pub(crate) fn new(
 		node: Arc<Node>, paginated_kv_store: Arc<dyn PaginatedKVStore>, api_key: String,
 		metrics: Option<Arc<Metrics>>, metrics_auth_header: Option<String>,
@@ -283,6 +286,10 @@ impl Service<Request<Incoming>> for NodeService {
 			match method.as_str() {
 				GET_NODE_INFO_PATH => {
 					handle_grpc_unary(context, body_bytes, handle_get_node_info_request).await
+				},
+				GET_FINANCIAL_INVENTORY_PATH => {
+					handle_grpc_unary(context, body_bytes, handle_get_financial_inventory_request)
+						.await
 				},
 				GET_BALANCES_PATH => {
 					handle_grpc_unary(context, body_bytes, handle_get_balances_request).await
@@ -563,6 +570,16 @@ mod tests {
 			builder = builder.header("x-auth", header);
 		}
 		builder.body(()).unwrap()
+	}
+
+	#[test]
+	fn financial_inventory_requires_authenticated_request() {
+		let request =
+			Request::builder().method("POST").uri("/ldk/GetFinancialInventory").body(()).unwrap();
+		assert_eq!(
+			validate_auth(&request, "test_key", b"").unwrap_err().error_code,
+			LdkServerErrorCode::AuthError
+		);
 	}
 
 	#[test]
