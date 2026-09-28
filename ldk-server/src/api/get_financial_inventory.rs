@@ -7,10 +7,12 @@
 // You may not use this file except in accordance with one or both of these
 // licenses.
 
+use std::sync::Arc;
+
+use ldk_server_grpc::api::*;
+
 use crate::api::error::{LdkServerError, LdkServerErrorCode};
 use crate::service::Context;
-use ldk_server_grpc::api::*;
-use std::sync::Arc;
 pub(crate) async fn handle_get_financial_inventory_request(
 	context: Arc<Context>, _request: GetFinancialInventoryRequest,
 ) -> Result<GetFinancialInventoryResponse, LdkServerError> {
@@ -68,6 +70,7 @@ fn convert_inventorychannel(v: ldk_node::inventory::InventoryChannel) -> Invento
 		counterparty_node_id: v.counterparty_node_id,
 		funding: v.funding.map(convert_inventoryoutput),
 		htlcs: v.htlcs.into_iter().map(convert_inventoryhtlc).collect(),
+		accounting_balance_msat: v.accounting_balance_msat,
 	}
 }
 fn convert_inventorycandidate(v: ldk_node::inventory::InventoryCandidate) -> InventoryCandidate {
@@ -126,6 +129,20 @@ fn convert_financialinventory(
 		sweeps: v.sweeps.into_iter().map(convert_inventorysweep).collect(),
 		gaps: v.gaps,
 		atomic: v.atomic,
+		payments: v
+			.payments
+			.into_iter()
+			.map(|p| InventoryPayment {
+				payment_id: p.payment_id,
+				txid: p.txid,
+				payment_hash: p.payment_hash,
+				inbound: p.inbound,
+				status: p.status,
+				amount_msat: p.amount_msat,
+				fee_msat: p.fee_msat,
+				updated_at: p.updated_at,
+			})
+			.collect(),
 		latest_wallet_sync: v.latest_wallet_sync,
 		latest_lightning_sync: v.latest_lightning_sync,
 	}
@@ -133,8 +150,9 @@ fn convert_financialinventory(
 
 #[cfg(test)]
 mod tests {
-	use super::*;
 	use prost::Message;
+
+	use super::*;
 	#[test]
 	fn inventory_wire_preserves_absent_htlc_id_and_zero_amount() {
 		let wire = convert_inventoryhtlc(ldk_node::inventory::InventoryHtlc {
@@ -174,5 +192,24 @@ mod tests {
 		assert_eq!(decoded.output.unwrap().vout, 3);
 		assert_eq!(decoded.confirmation.unwrap().height, 100);
 		assert_eq!(decoded.spending_txid, Some("34".repeat(32)));
+	}
+	#[test]
+	fn inventory_wire_preserves_exact_channel_msat_without_capacity_rounding() {
+		let wire = convert_inventorychannel(ldk_node::inventory::InventoryChannel {
+			channel_id: "01".repeat(32),
+			counterparty_node_id: "peer".into(),
+			funding: None,
+			htlcs: vec![],
+			accounting_balance_msat: Some(1_000_001),
+		});
+		let decoded = InventoryChannel::decode(wire.encode_to_vec().as_slice()).unwrap();
+		assert_eq!(decoded.accounting_balance_msat, Some(1_000_001));
+		let legacy = InventoryChannel { accounting_balance_msat: None, ..decoded };
+		assert_eq!(
+			InventoryChannel::decode(legacy.encode_to_vec().as_slice())
+				.unwrap()
+				.accounting_balance_msat,
+			None
+		);
 	}
 }
