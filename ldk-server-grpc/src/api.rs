@@ -1453,6 +1453,9 @@ pub struct InventoryChannel {
 	/// Pending conditional transfers.
 	#[prost(message, repeated, tag = "4")]
 	pub htlcs: ::prost::alloc::vec::Vec<InventoryHtlc>,
+	/// Exact holder ledger allocation in msat; unresolved outbound HTLCs remain encumbered.
+	#[prost(uint64, optional, tag = "5")]
+	pub accounting_balance_msat: ::core::option::Option<u64>,
 }
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
@@ -1563,7 +1566,7 @@ pub struct InventorySweep {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetFinancialInventoryResponse {
-	/// Version 1. Reject unsupported versions.
+	/// Version 1 is non-atomic; version 2 contains a simultaneous accounting snapshot.
 	#[prost(uint32, tag = "1")]
 	pub schema_version: u32,
 	/// Node public key.
@@ -1602,7 +1605,7 @@ pub struct GetFinancialInventoryResponse {
 	/// Explicit observation failures or changes. Empty does not imply atomicity.
 	#[prost(string, repeated, tag = "13")]
 	pub gaps: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
-	/// Always false: component locks do not form a global snapshot.
+	/// True only for schema 2 when all financial component locks were held together.
 	#[prost(bool, tag = "14")]
 	pub atomic: bool,
 	/// Last successful on-chain sync, UNIX seconds.
@@ -1611,4 +1614,30 @@ pub struct GetFinancialInventoryResponse {
 	/// Last successful Lightning sync, UNIX seconds.
 	#[prost(uint64, optional, tag = "16")]
 	pub latest_lightning_sync: ::core::option::Option<u64>,
+	/// Sanitized payment history in the same atomic boundary (schema 2).
+	#[prost(message, repeated, tag = "17")]
+	pub payments: ::prost::alloc::vec::Vec<InventoryPayment>,
+}
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct InventoryPayment {
+	#[prost(string, tag = "1")]
+	pub payment_id: ::prost::alloc::string::String,
+	#[prost(string, optional, tag = "2")]
+	pub txid: ::core::option::Option<::prost::alloc::string::String>,
+	#[prost(string, optional, tag = "3")]
+	pub payment_hash: ::core::option::Option<::prost::alloc::string::String>,
+	#[prost(bool, tag = "4")]
+	pub inbound: bool,
+	#[prost(string, tag = "5")]
+	pub status: ::prost::alloc::string::String,
+	#[prost(uint64, optional, tag = "6")]
+	pub amount_msat: ::core::option::Option<u64>,
+	#[prost(uint64, optional, tag = "7")]
+	pub fee_msat: ::core::option::Option<u64>,
+	#[prost(uint64, tag = "8")]
+	pub updated_at: u64,
 }

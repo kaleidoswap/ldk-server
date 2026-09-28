@@ -1118,6 +1118,8 @@ message InventoryChannel {
   optional InventoryOutput funding = 3;
   // Pending conditional transfers.
   repeated InventoryHtlc htlcs = 4;
+  // Exact holder ledger allocation in msat; unresolved outbound HTLCs remain encumbered.
+  optional uint64 accounting_balance_msat = 5;
 }
 message InventoryCandidate {
   // Claimable amount excluding commitment fee.
@@ -1178,7 +1180,7 @@ message InventorySweep {
   optional uint32 delayed_until_height = 6;
 }
 message GetFinancialInventoryResponse {
-  // Version 1. Reject unsupported versions.
+  // Version 1 is non-atomic; version 2 contains a simultaneous accounting snapshot.
   uint32 schema_version = 1;
   // Node public key.
   string node_id = 2;
@@ -1204,10 +1206,23 @@ message GetFinancialInventoryResponse {
   repeated InventorySweep sweeps = 12;
   // Explicit observation failures or changes. Empty does not imply atomicity.
   repeated string gaps = 13;
-  // Always false: component locks do not form a global snapshot.
+  // True only for schema 2 when all financial component locks were held together.
   bool atomic = 14;
   // Last successful on-chain sync, UNIX seconds.
   optional uint64 latest_wallet_sync = 15;
   // Last successful Lightning sync, UNIX seconds.
   optional uint64 latest_lightning_sync = 16;
+  // Sanitized payment history in the same atomic boundary (schema 2).
+  repeated InventoryPayment payments = 17;
+}
+
+message InventoryPayment {
+  string payment_id = 1;
+  optional string txid = 2;
+  optional string payment_hash = 3;
+  bool inbound = 4;
+  string status = 5;
+  optional uint64 amount_msat = 6;
+  optional uint64 fee_msat = 7;
+  uint64 updated_at = 8;
 }

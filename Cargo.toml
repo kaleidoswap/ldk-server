@@ -10,3 +10,18 @@ lto = true
 
 [profile.dev]
 panic = "abort"
+
+# Keep transitive payment-instructions dependencies on the same LDK accounting revision.
+[patch."https://github.com/lightningdevkit/rust-lightning"]
+lightning = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "6bb6160cd9e43bf88c6e78abf1b90eb4adc50002" }
+lightning-types = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "6bb6160cd9e43bf88c6e78abf1b90eb4adc50002" }
+lightning-invoice = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "6bb6160cd9e43bf88c6e78abf1b90eb4adc50002" }
+lightning-net-tokio = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "6bb6160cd9e43bf88c6e78abf1b90eb4adc50002" }
+lightning-persister = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "6bb6160cd9e43bf88c6e78abf1b90eb4adc50002" }
+lightning-background-processor = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "6bb6160cd9e43bf88c6e78abf1b90eb4adc50002" }
+lightning-rapid-gossip-sync = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "6bb6160cd9e43bf88c6e78abf1b90eb4adc50002" }
+lightning-block-sync = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "6bb6160cd9e43bf88c6e78abf1b90eb4adc50002" }
+lightning-transaction-sync = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "6bb6160cd9e43bf88c6e78abf1b90eb4adc50002" }
+lightning-liquidity = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "6bb6160cd9e43bf88c6e78abf1b90eb4adc50002" }
+lightning-macros = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "6bb6160cd9e43bf88c6e78abf1b90eb4adc50002" }
+lightning-dns-resolver = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "6bb6160cd9e43bf88c6e78abf1b90eb4adc50002" }

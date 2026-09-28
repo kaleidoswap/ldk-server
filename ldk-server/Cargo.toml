@@ -9,7 +9,7 @@ edition = "2021"
 # BOLT12 fetch/pay-invoice RPCs. Deliberately NOT the 00dba456-based branch:
 # that base carries the one-way FileSystemStoreV2 migration.
 # Adds the read-only financial inventory extension on the same storage baseline.
-ldk-node = { git = "https://github.com/kaleidoswap/ldk-node", rev = "a80fd4ed3625c9298756a73fb7a4efab3b748e69" }
+ldk-node = { git = "https://github.com/kaleidoswap/ldk-node", rev = "cbeb9559021dd83094f90e230474268a66ba2227" }
 serde = { version = "1.0.203", default-features = false, features = ["derive"] }
 hyper = { version = "1", default-features = false, features = ["server", "http2"] }
 http-body-util = { version = "0.1", default-features = false }
