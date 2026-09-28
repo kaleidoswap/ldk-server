@@ -292,6 +292,13 @@ enum Commands {
 		expiry_secs: Option<u32>,
 		#[arg(long, help = "Number of items requested. Can only be set for fixed-amount offers")]
 		quantity: Option<u64>,
+		#[arg(
+			long,
+			help = "Hex-encoded payment hash to hold payments for. Requires an amount; claim or fail via bolt11-claim-for-id / bolt11-fail-for-id"
+		)]
+		payment_hash: Option<String>,
+		#[arg(long, help = "With --payment-hash: minimum final CLTV expiry delta, in blocks")]
+		min_final_cltv_expiry_delta: Option<u32>,
 	},
 	#[command(about = "Send a payment for a BOLT12 offer")]
 	Bolt12Send {
@@ -363,6 +370,10 @@ enum Commands {
 	Bolt12ReceiveRefund {
 		#[arg(help = "A BOLT12 refund from the node that will send the payment")]
 		refund: String,
+		#[arg(long, help = "Hex-encoded payment hash to hold the payment for")]
+		payment_hash: Option<String>,
+		#[arg(long, help = "With --payment-hash: minimum final CLTV expiry delta, in blocks")]
+		min_final_cltv_expiry_delta: Option<u32>,
 	},
 	#[command(about = "Create a BOLT 12 payer proof for a payment this node made")]
 	Bolt12CreatePayerProof {
@@ -1002,7 +1013,14 @@ async fn main() {
 					.await,
 			);
 		},
-		Commands::Bolt12Receive { description, amount, expiry_secs, quantity } => {
+		Commands::Bolt12Receive {
+			description,
+			amount,
+			expiry_secs,
+			quantity,
+			payment_hash,
+			min_final_cltv_expiry_delta,
+		} => {
 			let amount_msat = amount.map(|a| a.to_msat());
 			handle_response_result::<_, Bolt12ReceiveResponse>(
 				client
@@ -1011,6 +1029,8 @@ async fn main() {
 						amount_msat,
 						expiry_secs,
 						quantity,
+						payment_hash,
+						min_final_cltv_expiry_delta,
 					})
 					.await,
 			);
@@ -1080,9 +1100,16 @@ async fn main() {
 					.await,
 			);
 		},
-		Commands::Bolt12ReceiveRefund { refund } => {
+		Commands::Bolt12ReceiveRefund { refund, payment_hash, min_final_cltv_expiry_delta } => {
 			handle_response_result::<_, Bolt12ReceiveRefundResponse>(
-				client.bolt12_receive_refund(Bolt12ReceiveRefundRequest { refund }).await,
+				client
+					.bolt12_receive_refund(Bolt12ReceiveRefundRequest {
+						refund,
+						payment_hash,
+						min_final_cltv_expiry_delta,
+						expected_amount_msat: None,
+					})
+					.await,
 			);
 		},
 		Commands::Bolt12CreatePayerProof {

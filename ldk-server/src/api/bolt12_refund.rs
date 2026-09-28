@@ -10,12 +10,15 @@
 use std::str::FromStr;
 use std::sync::Arc;
 
+use hex::DisplayHex;
 use ldk_node::lightning::offers::refund::Refund;
+use ldk_node::lightning::util::ser::Writeable;
 use ldk_server_grpc::api::{
 	Bolt12ReceiveRefundRequest, Bolt12ReceiveRefundResponse, Bolt12SendRefundRequest,
 	Bolt12SendRefundResponse,
 };
 
+use crate::api::bolt12_receive::{parse_min_final_cltv_expiry_delta, parse_payment_hash};
 use crate::api::build_route_parameters_config_from_proto;
 use crate::api::error::{LdkServerError, LdkServerErrorCode};
 use crate::service::Context;
@@ -51,10 +54,30 @@ pub(crate) async fn handle_bolt12_receive_refund_request(
 ) -> Result<Bolt12ReceiveRefundResponse, LdkServerError> {
 	let refund =
 		Refund::from_str(&request.refund).map_err(|_| ldk_node::NodeError::InvalidRefund)?;
-	let invoice = context.node.bolt12_payment().request_refund_payment(&refund)?;
-	let payment_hash = invoice.payment_hash().to_string();
+	if let Some(expected) = request.expected_amount_msat {
+		if refund.amount_msats() != expected {
+			return Err(LdkServerError::new(
+				LdkServerErrorCode::InvalidRequestError,
+				format!("Refund is for {} msat, expected {} msat", refund.amount_msats(), expected),
+			));
+		}
+	}
+	let payment_hash = request.payment_hash.as_deref().map(parse_payment_hash).transpose()?;
+	let min_final_cltv_expiry_delta =
+		parse_min_final_cltv_expiry_delta(request.min_final_cltv_expiry_delta, payment_hash)?;
+	let invoice = match payment_hash {
+		Some(payment_hash) => context.node.bolt12_payment().request_refund_payment_for_hash(
+			&refund,
+			payment_hash,
+			min_final_cltv_expiry_delta,
+		)?,
+		None => context.node.bolt12_payment().request_refund_payment(&refund)?,
+	};
 
-	Ok(Bolt12ReceiveRefundResponse { payment_hash })
+	Ok(Bolt12ReceiveRefundResponse {
+		payment_hash: invoice.payment_hash().to_string(),
+		invoice: invoice.encode().to_lower_hex_string(),
+	})
 }
 
 #[cfg(test)]

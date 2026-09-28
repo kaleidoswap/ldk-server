@@ -26,7 +26,7 @@ use ldk_node::lightning_invoice::Bolt11Invoice;
 use ldk_server_client::error::LdkServerErrorCode::InvalidRequestError;
 use ldk_server_client::ldk_server_grpc::api::{
 	open_channel_request, Bolt11ClaimForIdRequest, Bolt11FailForIdRequest, Bolt11ReceiveRequest,
-	Bolt12ReceiveRequest, GetChannelForwardingStatsRequest, GetForwardedPaymentDetailsRequest,
+	Bolt12ReceiveRefundRequest, Bolt12ReceiveRequest, GetChannelForwardingStatsRequest, GetForwardedPaymentDetailsRequest,
 	ListChannelForwardingStatsRequest, ListChannelPairForwardingStatsRequest,
 	ListForwardedPaymentsRequest, OnchainReceiveRequest, OpenChannelRequest,
 };
@@ -1024,6 +1024,8 @@ async fn test_cli_pay() {
 			amount_msat: None,
 			expiry_secs: None,
 			quantity: None,
+			payment_hash: None,
+			min_final_cltv_expiry_delta: None,
 		})
 		.await
 		.unwrap();
@@ -1046,6 +1048,8 @@ async fn test_cli_bolt12_send() {
 			amount_msat: None,
 			expiry_secs: None,
 			quantity: None,
+			payment_hash: None,
+			min_final_cltv_expiry_delta: None,
 		})
 		.await
 		.unwrap();
@@ -1072,6 +1076,8 @@ async fn test_cli_bolt12_refund() {
 			amount_msat: Some(10_000_000),
 			expiry_secs: None,
 			quantity: None,
+			payment_hash: None,
+			min_final_cltv_expiry_delta: None,
 		})
 		.await
 		.unwrap();
@@ -1121,6 +1127,8 @@ async fn test_cli_bolt12_create_payer_proof() {
 			amount_msat: Some(10_000_000),
 			expiry_secs: None,
 			quantity: None,
+			payment_hash: None,
+			min_final_cltv_expiry_delta: None,
 		})
 		.await
 		.unwrap();
@@ -1991,4 +1999,129 @@ async fn test_cli_spontaneous_send_with_preimage() {
 		panic!("expected spontaneous kind");
 	};
 	assert_eq!(spont.hash, payment_hash_hex);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 1)]
+async fn test_bolt12_hodl_offer_claim_and_fail() {
+	let bitcoind = TestBitcoind::new();
+	let server_a = LdkServerHandle::start(&bitcoind).await;
+	let server_b = LdkServerHandle::start(&bitcoind).await;
+
+	let mut events_a = server_a.client().subscribe_events().await.unwrap();
+	let mut events_b = server_b.client().subscribe_events().await.unwrap();
+
+	setup_funded_channel(&bitcoind, &server_a, &server_b, 100_000).await;
+
+	for (preimage_bytes, claim) in [([52u8; 32], true), ([53u8; 32], false)] {
+		let preimage_hex = preimage_bytes.to_lower_hex_string();
+		let payment_hash_hex =
+			sha256::Hash::hash(&preimage_bytes).to_byte_array().to_lower_hex_string();
+
+		let offer = run_cli(
+			&server_b,
+			&[
+				"bolt12-receive",
+				"hodl offer",
+				"10000sat",
+				"--payment-hash",
+				&payment_hash_hex,
+				"--min-final-cltv-expiry-delta",
+				"144",
+			],
+		);
+		run_cli(&server_a, &["bolt12-send", offer["offer"].as_str().unwrap()]);
+
+		let claimable =
+			wait_for_event(&mut events_b, |e| matches!(e, Event::PaymentClaimable(_))).await;
+		let Some(Event::PaymentClaimable(claimable_event)) = &claimable.event else {
+			panic!("expected PaymentClaimable");
+		};
+		let payment = claimable_event.payment.as_ref().unwrap();
+		let Some(payment_kind::Kind::Bolt12Offer(kind)) =
+			payment.kind.as_ref().unwrap().kind.as_ref()
+		else {
+			panic!("expected BOLT12 offer kind");
+		};
+		assert_eq!(kind.hash.as_deref(), Some(payment_hash_hex.as_str()));
+		let height = bitcoind.bitcoind.client.get_block_count().unwrap().0 as u32;
+		assert!(claimable_event.claim_deadline.unwrap() >= height + 144);
+
+		if claim {
+			run_cli(
+				&server_b,
+				&["bolt11-claim-for-id", &claimable_event.payment_id, &preimage_hex],
+			);
+			let successful =
+				wait_for_event(&mut events_a, |e| matches!(e, Event::PaymentSuccessful(_))).await;
+			let Some(Event::PaymentSuccessful(event)) = &successful.event else {
+				panic!("expected PaymentSuccessful");
+			};
+			assert_eq!(event.payment_preimage.as_deref(), Some(preimage_hex.as_str()));
+		} else {
+			run_cli(&server_b, &["bolt11-fail-for-id", &claimable_event.payment_id]);
+			wait_for_event(&mut events_a, |e| matches!(e, Event::PaymentFailed(_))).await;
+		}
+	}
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 1)]
+async fn test_bolt12_hodl_refund_claim() {
+	let bitcoind = TestBitcoind::new();
+	let server_a = LdkServerHandle::start(&bitcoind).await;
+	let server_b = LdkServerHandle::start(&bitcoind).await;
+
+	let mut events_a = server_a.client().subscribe_events().await.unwrap();
+	let mut events_b = server_b.client().subscribe_events().await.unwrap();
+
+	setup_funded_channel(&bitcoind, &server_a, &server_b, 100_000).await;
+
+	let preimage_bytes = [54u8; 32];
+	let preimage_hex = preimage_bytes.to_lower_hex_string();
+	let payment_hash_hex =
+		sha256::Hash::hash(&preimage_bytes).to_byte_array().to_lower_hex_string();
+
+	let output = run_cli(&server_a, &["bolt12-send-refund", "5000sat"]);
+	let refund = output["refund"].as_str().unwrap();
+
+	let error = server_b
+		.client()
+		.bolt12_receive_refund(Bolt12ReceiveRefundRequest {
+			refund: refund.to_string(),
+			payment_hash: Some(payment_hash_hex.clone()),
+			min_final_cltv_expiry_delta: Some(144),
+			expected_amount_msat: Some(4_999_000),
+		})
+		.await
+		.unwrap_err();
+	assert_eq!(error.error_code, InvalidRequestError);
+
+	let output = run_cli(
+		&server_b,
+		&[
+			"bolt12-receive-refund",
+			refund,
+			"--payment-hash",
+			&payment_hash_hex,
+			"--min-final-cltv-expiry-delta",
+			"144",
+		],
+	);
+	assert_eq!(output["payment_hash"].as_str(), Some(payment_hash_hex.as_str()));
+	assert!(!output["invoice"].as_str().unwrap().is_empty());
+
+	let claimable =
+		wait_for_event(&mut events_b, |e| matches!(e, Event::PaymentClaimable(_))).await;
+	let Some(Event::PaymentClaimable(claimable_event)) = &claimable.event else {
+		panic!("expected PaymentClaimable");
+	};
+	let height = bitcoind.bitcoind.client.get_block_count().unwrap().0 as u32;
+	assert!(claimable_event.claim_deadline.unwrap() >= height + 144);
+
+	run_cli(&server_b, &["bolt11-claim-for-id", &claimable_event.payment_id, &preimage_hex]);
+	let successful =
+		wait_for_event(&mut events_a, |e| matches!(e, Event::PaymentSuccessful(_))).await;
+	let Some(Event::PaymentSuccessful(event)) = &successful.event else {
+		panic!("expected PaymentSuccessful");
+	};
+	assert_eq!(event.payment_preimage.as_deref(), Some(preimage_hex.as_str()));
 }

@@ -455,6 +455,16 @@ pub struct Bolt12ReceiveRequest {
 	/// If set, it represents the number of items requested, can only be set for fixed-amount offers.
 	#[prost(uint64, optional, tag = "4")]
 	pub quantity: ::core::option::Option<u64>,
+	/// If set, every invoice for the offer commits to this hex-encoded 32-byte payment hash instead of
+	/// one derived by the node, and payments are held until claimed via `Bolt11ClaimForId` or failed
+	/// via `Bolt11FailForId` after a `PaymentClaimable` event. Requires `amount_msat`.
+	/// See more: <https://docs.rs/ldk-node/latest/ldk_node/payment/struct.Bolt12Payment.html#method.receive_for_hash>
+	#[prost(string, optional, tag = "5")]
+	pub payment_hash: ::core::option::Option<::prost::alloc::string::String>,
+	/// With `payment_hash`: pins the invoices' final-hop CLTV expiry delta (in blocks), as for
+	/// `Bolt11ReceiveForHashRequest.min_final_cltv_expiry_delta`.
+	#[prost(uint32, optional, tag = "6")]
+	pub min_final_cltv_expiry_delta: ::core::option::Option<u32>,
 }
 /// The response for the `Bolt12Receive` RPC. On failure, a gRPC error status is returned.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -560,6 +570,17 @@ pub struct Bolt12ReceiveRefundRequest {
 	/// A BOLT12 refund from the node that will send the payment.
 	#[prost(string, tag = "1")]
 	pub refund: ::prost::alloc::string::String,
+	/// If set, the invoice commits to this hex-encoded 32-byte payment hash, and the payment is held
+	/// as with `Bolt12ReceiveRequest.payment_hash`.
+	/// See more: <https://docs.rs/ldk-node/latest/ldk_node/payment/struct.Bolt12Payment.html#method.request_refund_payment_for_hash>
+	#[prost(string, optional, tag = "2")]
+	pub payment_hash: ::core::option::Option<::prost::alloc::string::String>,
+	/// With `payment_hash`: pins the invoice's final-hop CLTV expiry delta (in blocks).
+	#[prost(uint32, optional, tag = "3")]
+	pub min_final_cltv_expiry_delta: ::core::option::Option<u32>,
+	/// If set, the request is refused unless the refund is for exactly this amount.
+	#[prost(uint64, optional, tag = "4")]
+	pub expected_amount_msat: ::core::option::Option<u64>,
 }
 /// The response for the `Bolt12ReceiveRefund` RPC. On failure, a gRPC error status is returned.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -571,6 +592,9 @@ pub struct Bolt12ReceiveRefundResponse {
 	/// The payment hash for the incoming refund payment in hex-encoded form.
 	#[prost(string, tag = "1")]
 	pub payment_hash: ::prost::alloc::string::String,
+	/// The BOLT12 invoice sent to the refund's payer, as hex-encoded TLV bytes.
+	#[prost(string, tag = "2")]
+	pub invoice: ::prost::alloc::string::String,
 }
 /// Create a BOLT 12 payer proof for a payment this node made.
 /// Inputs come from `PaymentSuccessful`: `payment_id`, `payment_preimage`, and `bolt12_invoice`.
