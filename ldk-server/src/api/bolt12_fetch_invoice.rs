@@ -22,11 +22,8 @@ use crate::service::Context;
 /// The node runs with `manually_handle_bolt12_invoices = true`, so `send` /
 /// `send_using_amount` initiate the offer's invoice request but do not pay —
 /// the fetched invoice surfaces asynchronously as a `Bolt12InvoiceReceived`
-/// event. We mark the returned `payment_id` as manually-handled so the event
-/// loop holds it for an explicit [`Bolt12PayInvoice`] / [`AbandonBolt12Invoice`]
-/// instead of auto-paying it (which is what it does for `Bolt12Send`). This
-/// split lets a caller bind the invoice's payment hash to another obligation
-/// (e.g. an on-chain HTLC in a submarine swap) before committing to pay.
+/// event. Fetches never authorize auto-payment: the event loop holds unknown
+/// payment IDs for an explicit pay/abandon decision, including early arrivals.
 pub(crate) async fn handle_bolt12_fetch_invoice_request(
 	context: Arc<Context>, request: Bolt12FetchInvoiceRequest,
 ) -> Result<Bolt12FetchInvoiceResponse, LdkServerError> {
@@ -50,8 +47,6 @@ pub(crate) async fn handle_bolt12_fetch_invoice_request(
 			route_parameters,
 		),
 	}?;
-
-	context.manual_bolt12_payments.lock().unwrap().insert(payment_id);
 
 	let response = Bolt12FetchInvoiceResponse { payment_id: payment_id.to_string() };
 	Ok(response)

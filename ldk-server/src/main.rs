@@ -8,14 +8,16 @@
 // licenses.
 
 mod api;
+mod bolt12_gate;
 mod io;
 mod service;
 mod util;
 
+use crate::bolt12_gate::AutoPayGate;
 use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use base64::prelude::BASE64_STANDARD;
@@ -246,10 +248,8 @@ fn main() {
 
 	let (event_sender, _) = broadcast::channel::<EventEnvelope>(1024);
 	let (shutdown_tx, shutdown_rx) = tokio::sync::watch::channel(false);
-	// Shared between the gRPC handlers (which insert on Bolt12FetchInvoice) and the
-	// event loop (which checks it on Bolt12InvoiceReceived to decide hold-vs-auto-pay).
-	let manual_bolt12_payments: Arc<Mutex<HashSet<PaymentId>>> =
-		Arc::new(Mutex::new(HashSet::new()));
+	// Only explicit Bolt12Send requests may auto-pay. Unknown events fail closed.
+	let bolt12_auto_pay = Arc::new(AutoPayGate::<PaymentId>::new());
 
 	info!("Starting up...");
 	match node.start() {
@@ -574,9 +574,8 @@ fn main() {
 							}
 						},
 						Event::Bolt12InvoiceReceived { payment_id, payment_hash, amount_msat } => {
-							let is_manual =
-								manual_bolt12_payments.lock().unwrap().contains(&payment_id);
-							if is_manual {
+							let auto_pay = bolt12_auto_pay.take(&payment_id);
+							if !auto_pay {
 								// Fetched via Bolt12FetchInvoice: surface it (with the payment
 								// hash) so the client can bind the hash to another obligation
 								// before an explicit Bolt12PayInvoice / AbandonBolt12Invoice.
@@ -592,7 +591,7 @@ fn main() {
 									debug!("No event subscribers connected, skipping event: {e}");
 								}
 							} else {
-								// Default (Bolt12Send) path: auto-pay the just-fetched invoice so
+								// Explicitly authorized Bolt12Send: auto-pay the fetched invoice so
 								// the atomic send semantics hold under manual BOLT12 handling.
 								if let Err(e) = event_node
 									.bolt12_payment()
@@ -623,7 +622,7 @@ fn main() {
 								metrics_auth_header.clone(),
 								event_sender.clone(),
 								shutdown_rx.clone(),
-								Arc::clone(&manual_bolt12_payments),
+								Arc::clone(&bolt12_auto_pay),
 							);
 							let acceptor = tls_acceptor.clone();
 							runtime.spawn(async move {
