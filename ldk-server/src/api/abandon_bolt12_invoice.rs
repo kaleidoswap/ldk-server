@@ -32,7 +32,7 @@ pub(crate) async fn handle_abandon_bolt12_invoice_request(
 	let payment_id = PaymentId(payment_id_bytes);
 
 	context.node.bolt12_payment().abandon_bolt12_invoice(payment_id)?;
-	context.manual_bolt12_payments.lock().unwrap().remove(&payment_id);
+	context.bolt12_auto_pay.take(&payment_id);
 
 	let response = AbandonBolt12InvoiceResponse {};
 	Ok(response)
