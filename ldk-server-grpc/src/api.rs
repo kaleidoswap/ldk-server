@@ -465,6 +465,11 @@ pub struct Bolt12ReceiveRequest {
 	/// `Bolt11ReceiveForHashRequest.min_final_cltv_expiry_delta`.
 	#[prost(uint32, optional, tag = "6")]
 	pub min_final_cltv_expiry_delta: ::core::option::Option<u32>,
+	/// Experimental `ssps_rails` offer record (type 1000000385): the payment rails accepted, as a
+	/// JSON array of rail ids, e.g. `\["btc:signet","ln"\]`. Requires `amount_msat`; not combinable
+	/// with `payment_hash`.
+	#[prost(string, optional, tag = "7")]
+	pub ssps_rails: ::core::option::Option<::prost::alloc::string::String>,
 }
 /// The response for the `Bolt12Receive` RPC. On failure, a gRPC error status is returned.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

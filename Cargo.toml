@@ -13,8 +13,8 @@ panic = "abort"
 
 # ldk-node's fork of rust-lightning; bitcoin-payment-instructions pins upstream.
 [patch."https://github.com/lightningdevkit/rust-lightning"]
-lightning = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "893ec7f6d78a471ba2272837e3735724e123de60" }
-lightning-invoice = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "893ec7f6d78a471ba2272837e3735724e123de60" }
-lightning-types = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "893ec7f6d78a471ba2272837e3735724e123de60" }
-lightning-macros = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "893ec7f6d78a471ba2272837e3735724e123de60" }
-possiblyrandom = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "893ec7f6d78a471ba2272837e3735724e123de60" }
+lightning = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "55583cc7a99162dab864d8bf52582c7abc8b6cc2" }
+lightning-invoice = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "55583cc7a99162dab864d8bf52582c7abc8b6cc2" }
+lightning-types = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "55583cc7a99162dab864d8bf52582c7abc8b6cc2" }
+lightning-macros = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "55583cc7a99162dab864d8bf52582c7abc8b6cc2" }
+possiblyrandom = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "55583cc7a99162dab864d8bf52582c7abc8b6cc2" }

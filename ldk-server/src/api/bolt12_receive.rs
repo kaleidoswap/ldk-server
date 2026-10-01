@@ -50,6 +50,31 @@ pub(crate) async fn handle_bolt12_receive_request(
 	let payment_hash = request.payment_hash.as_deref().map(parse_payment_hash).transpose()?;
 	let min_final_cltv_expiry_delta =
 		parse_min_final_cltv_expiry_delta(request.min_final_cltv_expiry_delta, payment_hash)?;
+	if let Some(rails) = request.ssps_rails {
+		let trimmed = rails.trim();
+		if !(trimmed.starts_with("[\"") && trimmed.ends_with(']')) {
+			return Err(LdkServerError::new(
+				InvalidRequestError,
+				"ssps_rails must be a non-empty JSON array of rail ids.".to_string(),
+			));
+		}
+		let (Some(amount_msat), None) = (request.amount_msat, payment_hash) else {
+			return Err(LdkServerError::new(
+				InvalidRequestError,
+				"ssps_rails requires amount_msat and no payment_hash.".to_string(),
+			));
+		};
+		let offer = context.node.bolt12_payment().receive_with_ssps_rails(
+			amount_msat,
+			&request.description,
+			request.expiry_secs,
+			request.quantity,
+			rails,
+		)?;
+		let offer_id = offer.id().0.to_lower_hex_string();
+		return Ok(Bolt12ReceiveResponse { offer: offer.to_string(), offer_id });
+	}
+
 	let offer = match (request.amount_msat, payment_hash) {
 		(Some(amount_msat), Some(payment_hash)) => context.node.bolt12_payment().receive_for_hash(
 			amount_msat,

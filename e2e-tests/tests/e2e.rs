@@ -1026,6 +1026,7 @@ async fn test_cli_pay() {
 			quantity: None,
 			payment_hash: None,
 			min_final_cltv_expiry_delta: None,
+			ssps_rails: None,
 		})
 		.await
 		.unwrap();
@@ -1050,6 +1051,7 @@ async fn test_cli_bolt12_send() {
 			quantity: None,
 			payment_hash: None,
 			min_final_cltv_expiry_delta: None,
+			ssps_rails: None,
 		})
 		.await
 		.unwrap();
@@ -1078,6 +1080,7 @@ async fn test_cli_bolt12_refund() {
 			quantity: None,
 			payment_hash: None,
 			min_final_cltv_expiry_delta: None,
+			ssps_rails: None,
 		})
 		.await
 		.unwrap();
@@ -1129,6 +1132,7 @@ async fn test_cli_bolt12_create_payer_proof() {
 			quantity: None,
 			payment_hash: None,
 			min_final_cltv_expiry_delta: None,
+			ssps_rails: None,
 		})
 		.await
 		.unwrap();
@@ -2124,4 +2128,60 @@ async fn test_bolt12_hodl_refund_claim() {
 		panic!("expected PaymentSuccessful");
 	};
 	assert_eq!(event.payment_preimage.as_deref(), Some(preimage_hex.as_str()));
+}
+
+#[tokio::test]
+async fn test_bolt12_offer_with_ssps_rails_is_payable() {
+	let bitcoind = TestBitcoind::new();
+	let server_a = LdkServerHandle::start(&bitcoind).await;
+	let server_b = LdkServerHandle::start(&bitcoind).await;
+	let mut events_a = server_a.client().subscribe_events().await.unwrap();
+	let mut events_b = server_b.client().subscribe_events().await.unwrap();
+	setup_funded_channel(&bitcoind, &server_a, &server_b, 100_000).await;
+
+	let rails = r#"["btc:regtest","ln"]"#;
+	let offer_resp = server_b
+		.client()
+		.bolt12_receive(Bolt12ReceiveRequest {
+			description: "universal offer".to_string(),
+			amount_msat: Some(10_000_000),
+			expiry_secs: None,
+			quantity: None,
+			payment_hash: None,
+			min_final_cltv_expiry_delta: None,
+			ssps_rails: Some(rails.to_string()),
+		})
+		.await
+		.unwrap();
+	// Type 1000000385 as BigSize (0xfe + u32 BE), then the length and the JSON.
+	let offer = Offer::from_str(&offer_resp.offer).unwrap();
+	let mut record = vec![0xfe];
+	record.extend_from_slice(&1_000_000_385u32.to_be_bytes());
+	record.push(rails.len() as u8);
+	record.extend_from_slice(rails.as_bytes());
+	let bytes: &[u8] = offer.as_ref();
+	assert!(bytes.windows(record.len()).any(|w| w == record), "offer must carry ssps_rails");
+
+	// A payer that knows nothing about the record pays it like any offer.
+	let output = run_cli(&server_a, &["bolt12-send", &offer_resp.offer]);
+	assert!(!output["payment_id"].as_str().unwrap().is_empty());
+	let event_a = wait_for_event(&mut events_a, |e| matches!(e, Event::PaymentSuccessful(_))).await;
+	assert!(matches!(&event_a.event, Some(Event::PaymentSuccessful(_))));
+	let event_b = wait_for_event(&mut events_b, |e| matches!(e, Event::PaymentReceived(_))).await;
+	assert!(matches!(&event_b.event, Some(Event::PaymentReceived(_))));
+
+	// Rails require a fixed amount.
+	let err = server_b
+		.client()
+		.bolt12_receive(Bolt12ReceiveRequest {
+			description: "no amount".to_string(),
+			amount_msat: None,
+			expiry_secs: None,
+			quantity: None,
+			payment_hash: None,
+			min_final_cltv_expiry_delta: None,
+			ssps_rails: Some(rails.to_string()),
+		})
+		.await;
+	assert!(err.is_err());
 }

@@ -363,6 +363,11 @@ message Bolt12ReceiveRequest {
   // With `payment_hash`: pins the invoices' final-hop CLTV expiry delta (in blocks), as for
   // `Bolt11ReceiveForHashRequest.min_final_cltv_expiry_delta`.
   optional uint32 min_final_cltv_expiry_delta = 6;
+
+  // Experimental `ssps_rails` offer record (type 1000000385): the payment rails accepted, as a
+  // JSON array of rail ids, e.g. `["btc:signet","ln"]`. Requires `amount_msat`; not combinable
+  // with `payment_hash`.
+  optional string ssps_rails = 7;
 }
 
 // The response for the `Bolt12Receive` RPC. On failure, a gRPC error status is returned.
