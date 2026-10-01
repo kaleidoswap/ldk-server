@@ -1330,3 +1330,314 @@ pub struct DecodeOfferResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SubscribeEventsRequest {}
+/// Read-only evidence, not a claim of globally atomic or complete ownership.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GetFinancialInventoryRequest {}
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct InventoryTip {
+	/// Block hash in display order.
+	#[prost(string, tag = "1")]
+	pub hash: ::prost::alloc::string::String,
+	/// Block height.
+	#[prost(uint32, tag = "2")]
+	pub height: u32,
+}
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct InventoryOutput {
+	/// Transaction ID in display order.
+	#[prost(string, tag = "1")]
+	pub txid: ::prost::alloc::string::String,
+	/// Output index.
+	#[prost(uint32, tag = "2")]
+	pub vout: u32,
+	/// Output amount in satoshis.
+	#[prost(uint64, tag = "3")]
+	pub value_sat: u64,
+	/// Hex encoded locking script.
+	#[prost(string, tag = "4")]
+	pub script_pubkey: ::prost::alloc::string::String,
+}
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct InventoryUtxo {
+	/// Wallet-owned unspent output.
+	#[prost(message, optional, tag = "1")]
+	pub output: ::core::option::Option<InventoryOutput>,
+	/// Direct or transitive confirmation anchor; absent for unconfirmed outputs.
+	#[prost(message, optional, tag = "2")]
+	pub confirmation: ::core::option::Option<InventoryTip>,
+	/// Descendant transaction proving confirmation, if direct confirmation is unknown.
+	#[prost(string, optional, tag = "3")]
+	pub transitively: ::core::option::Option<::prost::alloc::string::String>,
+	/// First mempool observation, UNIX seconds.
+	#[prost(uint64, optional, tag = "4")]
+	pub first_seen: ::core::option::Option<u64>,
+	/// Latest mempool observation, UNIX seconds.
+	#[prost(uint64, optional, tag = "5")]
+	pub last_seen: ::core::option::Option<u64>,
+}
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct WalletInventory {
+	/// Wallet chain anchor collected under the UTXO lock.
+	#[prost(message, optional, tag = "1")]
+	pub tip: ::core::option::Option<InventoryTip>,
+	/// All wallet unspent outputs; not necessarily spendable.
+	#[prost(message, repeated, tag = "2")]
+	pub utxos: ::prost::alloc::vec::Vec<InventoryUtxo>,
+}
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct InventoryHtlc {
+	/// True for an incoming HTLC.
+	#[prost(bool, tag = "1")]
+	pub inbound: bool,
+	/// Channel-local HTLC identifier; absent before assignment.
+	#[prost(uint64, optional, tag = "2")]
+	pub htlc_id: ::core::option::Option<u64>,
+	/// Conditional amount in millisatoshis, not unconditional ownership.
+	#[prost(uint64, tag = "3")]
+	pub amount_msat: u64,
+	/// Payment hash only, never its preimage.
+	#[prost(string, tag = "4")]
+	pub payment_hash: ::prost::alloc::string::String,
+	/// Absolute expiry height.
+	#[prost(uint32, tag = "5")]
+	pub cltv_expiry: u32,
+	/// LDK HTLC state; absent when unavailable.
+	#[prost(string, optional, tag = "6")]
+	pub state: ::core::option::Option<::prost::alloc::string::String>,
+	/// Whether the HTLC is trimmed on commitment.
+	#[prost(bool, tag = "7")]
+	pub is_dust: bool,
+	/// Outbound skimmed fee, when available.
+	#[prost(uint64, optional, tag = "8")]
+	pub skimmed_fee_msat: ::core::option::Option<u64>,
+}
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct InventoryChannel {
+	/// Channel identifier.
+	#[prost(string, tag = "1")]
+	pub channel_id: ::prost::alloc::string::String,
+	/// Peer public key.
+	#[prost(string, tag = "2")]
+	pub counterparty_node_id: ::prost::alloc::string::String,
+	/// Current funding output; includes the peer share and is not our owned balance.
+	#[prost(message, optional, tag = "3")]
+	pub funding: ::core::option::Option<InventoryOutput>,
+	/// Pending conditional transfers.
+	#[prost(message, repeated, tag = "4")]
+	pub htlcs: ::prost::alloc::vec::Vec<InventoryHtlc>,
+	/// Exact holder ledger allocation in msat; unresolved outbound HTLCs remain encumbered.
+	#[prost(uint64, optional, tag = "5")]
+	pub accounting_balance_msat: ::core::option::Option<u64>,
+}
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct InventoryCandidate {
+	/// Claimable amount excluding commitment fee.
+	#[prost(uint64, tag = "1")]
+	pub amount_sat: u64,
+	/// Commitment fee, including applicable dust and rounding.
+	#[prost(uint64, tag = "2")]
+	pub transaction_fee_sat: u64,
+}
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct InventoryClaim {
+	/// LDK claim category; conditional categories must remain conditional.
+	#[prost(string, tag = "1")]
+	pub kind: ::prost::alloc::string::String,
+	/// Claim amount when not represented by candidates.
+	#[prost(uint64, optional, tag = "2")]
+	pub amount_sat: ::core::option::Option<u64>,
+	/// Category-specific confirmation, timeout, claimable or expiry height.
+	#[prost(uint32, optional, tag = "3")]
+	pub height: ::core::option::Option<u32>,
+	/// HTLC payment hash, never its preimage.
+	#[prost(string, optional, tag = "4")]
+	pub payment_hash: ::core::option::Option<::prost::alloc::string::String>,
+	/// Whether timeout claim originated as a payment rather than forwarding.
+	#[prost(bool, optional, tag = "5")]
+	pub outbound_payment: ::core::option::Option<bool>,
+	/// Close or HTLC source for confirmation claims.
+	#[prost(string, optional, tag = "6")]
+	pub source: ::core::option::Option<::prost::alloc::string::String>,
+	/// All alternative commitments; never sum candidates.
+	#[prost(message, repeated, tag = "7")]
+	pub candidates: ::prost::alloc::vec::Vec<InventoryCandidate>,
+	/// LDK confirmed candidate index; zero does not select the latest splice.
+	#[prost(uint64, optional, tag = "8")]
+	pub confirmed_candidate_index: ::core::option::Option<u64>,
+	/// LDK outbound payment rounding component.
+	#[prost(uint64, optional, tag = "9")]
+	pub outbound_payment_rounded_msat: ::core::option::Option<u64>,
+	/// LDK forwarded rounding component.
+	#[prost(uint64, optional, tag = "10")]
+	pub outbound_forwarded_rounded_msat: ::core::option::Option<u64>,
+	/// LDK inbound claiming rounding component.
+	#[prost(uint64, optional, tag = "11")]
+	pub inbound_claiming_rounded_msat: ::core::option::Option<u64>,
+	/// LDK unclaimed inbound rounding component.
+	#[prost(uint64, optional, tag = "12")]
+	pub inbound_rounded_msat: ::core::option::Option<u64>,
+}
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct InventoryMonitor {
+	/// Monitored channel identifier.
+	#[prost(string, tag = "1")]
+	pub channel_id: ::prost::alloc::string::String,
+	/// Monitored funding transaction ID.
+	#[prost(string, tag = "2")]
+	pub funding_txid: ::prost::alloc::string::String,
+	/// Monitored funding output index.
+	#[prost(uint32, tag = "3")]
+	pub funding_vout: u32,
+	/// Monitor chain anchor.
+	#[prost(message, optional, tag = "4")]
+	pub tip: ::core::option::Option<InventoryTip>,
+	/// Claim evidence; does not assert accounting ownership.
+	#[prost(message, repeated, tag = "5")]
+	pub claims: ::prost::alloc::vec::Vec<InventoryClaim>,
+}
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct InventorySweep {
+	/// Original output being swept, for overlap detection.
+	#[prost(message, optional, tag = "1")]
+	pub output: ::core::option::Option<InventoryOutput>,
+	/// Originating channel when known.
+	#[prost(string, optional, tag = "2")]
+	pub channel_id: ::core::option::Option<::prost::alloc::string::String>,
+	/// pending_broadcast, pending_confirmation or confirmed.
+	#[prost(string, tag = "3")]
+	pub state: ::prost::alloc::string::String,
+	/// Latest spending transaction ID, if any.
+	#[prost(string, optional, tag = "4")]
+	pub spending_txid: ::core::option::Option<::prost::alloc::string::String>,
+	/// Spending transaction confirmation, if any.
+	#[prost(message, optional, tag = "5")]
+	pub confirmation: ::core::option::Option<InventoryTip>,
+	/// Earliest broadcast height, if delayed.
+	#[prost(uint32, optional, tag = "6")]
+	pub delayed_until_height: ::core::option::Option<u32>,
+}
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GetFinancialInventoryResponse {
+	/// Version 1 is non-atomic; version 2 contains a simultaneous accounting snapshot.
+	#[prost(uint32, tag = "1")]
+	pub schema_version: u32,
+	/// Node public key.
+	#[prost(string, tag = "2")]
+	pub node_id: ::prost::alloc::string::String,
+	/// Bitcoin network name.
+	#[prost(string, tag = "3")]
+	pub network: ::prost::alloc::string::String,
+	/// Collection start time, UNIX milliseconds.
+	#[prost(uint64, tag = "4")]
+	pub started_at_ms: u64,
+	/// Collection end time, UNIX milliseconds.
+	#[prost(uint64, tag = "5")]
+	pub finished_at_ms: u64,
+	/// Channel-manager anchor before collection.
+	#[prost(message, optional, tag = "6")]
+	pub node_tip_before: ::core::option::Option<InventoryTip>,
+	/// Channel-manager anchor after collection.
+	#[prost(message, optional, tag = "7")]
+	pub node_tip_after: ::core::option::Option<InventoryTip>,
+	/// Wallet evidence collected under one lock.
+	#[prost(message, optional, tag = "8")]
+	pub wallet: ::core::option::Option<WalletInventory>,
+	/// Channel and pending HTLC evidence.
+	#[prost(message, repeated, tag = "9")]
+	pub channels: ::prost::alloc::vec::Vec<InventoryChannel>,
+	/// Monitor claims and anchors.
+	#[prost(message, repeated, tag = "10")]
+	pub monitors: ::prost::alloc::vec::Vec<InventoryMonitor>,
+	/// Output sweeper chain anchor.
+	#[prost(message, optional, tag = "11")]
+	pub sweeper_tip: ::core::option::Option<InventoryTip>,
+	/// Tracked output sweep evidence.
+	#[prost(message, repeated, tag = "12")]
+	pub sweeps: ::prost::alloc::vec::Vec<InventorySweep>,
+	/// Explicit observation failures or changes. Empty does not imply atomicity.
+	#[prost(string, repeated, tag = "13")]
+	pub gaps: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+	/// True only for schema 2 when all financial component locks were held together.
+	#[prost(bool, tag = "14")]
+	pub atomic: bool,
+	/// Last successful on-chain sync, UNIX seconds.
+	#[prost(uint64, optional, tag = "15")]
+	pub latest_wallet_sync: ::core::option::Option<u64>,
+	/// Last successful Lightning sync, UNIX seconds.
+	#[prost(uint64, optional, tag = "16")]
+	pub latest_lightning_sync: ::core::option::Option<u64>,
+	/// Sanitized payment history in the same atomic boundary (schema 2).
+	#[prost(message, repeated, tag = "17")]
+	pub payments: ::prost::alloc::vec::Vec<InventoryPayment>,
+}
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct InventoryPayment {
+	#[prost(string, tag = "1")]
+	pub payment_id: ::prost::alloc::string::String,
+	#[prost(string, optional, tag = "2")]
+	pub txid: ::core::option::Option<::prost::alloc::string::String>,
+	#[prost(string, optional, tag = "3")]
+	pub payment_hash: ::core::option::Option<::prost::alloc::string::String>,
+	#[prost(bool, tag = "4")]
+	pub inbound: bool,
+	#[prost(string, tag = "5")]
+	pub status: ::prost::alloc::string::String,
+	#[prost(uint64, optional, tag = "6")]
+	pub amount_msat: ::core::option::Option<u64>,
+	#[prost(uint64, optional, tag = "7")]
+	pub fee_msat: ::core::option::Option<u64>,
+	#[prost(uint64, tag = "8")]
+	pub updated_at: u64,
+}
