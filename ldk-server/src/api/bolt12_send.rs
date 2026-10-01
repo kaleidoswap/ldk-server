@@ -25,7 +25,7 @@ pub(crate) async fn handle_bolt12_send_request(
 
 	let route_parameters = build_route_parameters_config_from_proto(request.route_parameters)?;
 
-	let payment_id = match request.amount_msat {
+	let payment_id = context.bolt12_auto_pay.authorize(|| match request.amount_msat {
 		None => context.node.bolt12_payment().send(
 			&offer,
 			request.quantity,
@@ -39,7 +39,7 @@ pub(crate) async fn handle_bolt12_send_request(
 			request.payer_note,
 			route_parameters,
 		),
-	}?;
+	})?;
 
 	let response = Bolt12SendResponse { payment_id: payment_id.to_string() };
 	Ok(response)
