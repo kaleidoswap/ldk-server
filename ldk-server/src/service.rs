@@ -7,10 +7,10 @@
 // You may not use this file except in accordance with one or both of these
 // licenses.
 
-use std::collections::HashSet;
+use crate::bolt12_gate::AutoPayGate;
 use std::future::Future;
 use std::pin::Pin;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use http_body_util::{BodyExt, Limited};
 use hyper::body::Incoming;
@@ -114,9 +114,9 @@ impl NodeService {
 		metrics: Option<Arc<Metrics>>, metrics_auth_header: Option<String>,
 		event_sender: broadcast::Sender<EventEnvelope>,
 		shutdown_rx: tokio::sync::watch::Receiver<bool>,
-		manual_bolt12_payments: Arc<Mutex<HashSet<PaymentId>>>,
+		bolt12_auto_pay: Arc<AutoPayGate<PaymentId>>,
 	) -> Self {
-		let context = Arc::new(Context { node, paginated_kv_store, manual_bolt12_payments });
+		let context = Arc::new(Context { node, paginated_kv_store, bolt12_auto_pay });
 		Self { context, api_key, metrics, metrics_auth_header, event_sender, shutdown_rx }
 	}
 }
@@ -175,11 +175,8 @@ fn validate_auth<B>(req: &Request<B>, api_key: &str, body: &[u8]) -> Result<(), 
 pub(crate) struct Context {
 	pub(crate) node: Arc<Node>,
 	pub(crate) paginated_kv_store: Arc<dyn PaginatedKVStore>,
-	/// Payment ids of BOLT12 invoices fetched via `Bolt12FetchInvoice` and awaiting
-	/// an explicit `Bolt12PayInvoice` / `AbandonBolt12Invoice`. The event loop checks
-	/// this set when a `Bolt12InvoiceReceived` event fires: ids in it are surfaced to
-	/// clients (manual handling); everything else is auto-paid (preserving `Bolt12Send`).
-	pub(crate) manual_bolt12_payments: Arc<Mutex<HashSet<PaymentId>>>,
+	/// Single-use authorization for explicit Bolt12Send calls. Fetches never enter.
+	pub(crate) bolt12_auto_pay: Arc<AutoPayGate<PaymentId>>,
 }
 
 impl Service<Request<Incoming>> for NodeService {
