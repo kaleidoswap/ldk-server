@@ -466,8 +466,8 @@ pub struct Bolt12ReceiveRequest {
 	#[prost(uint32, optional, tag = "6")]
 	pub min_final_cltv_expiry_delta: ::core::option::Option<u32>,
 	/// Experimental `ssps_rails` offer record (type 1000000385): the payment rails accepted, as a
-	/// JSON array of rail ids, e.g. `\["btc:signet","ln"\]`. Requires `amount_msat`; not combinable
-	/// with `payment_hash`.
+	/// JSON array of 1 to 32 entries, each a rail-id string or an object, e.g. `\["btc:signet","ln"\]`.
+	/// Without `amount_msat` the offer is amountless. Not combinable with `payment_hash`.
 	#[prost(string, optional, tag = "7")]
 	pub ssps_rails: ::core::option::Option<::prost::alloc::string::String>,
 }

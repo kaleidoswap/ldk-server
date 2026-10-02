@@ -26,9 +26,10 @@ use ldk_node::lightning_invoice::Bolt11Invoice;
 use ldk_server_client::error::LdkServerErrorCode::InvalidRequestError;
 use ldk_server_client::ldk_server_grpc::api::{
 	open_channel_request, Bolt11ClaimForIdRequest, Bolt11FailForIdRequest, Bolt11ReceiveRequest,
-	Bolt12ReceiveRefundRequest, Bolt12ReceiveRequest, GetChannelForwardingStatsRequest, GetForwardedPaymentDetailsRequest,
-	ListChannelForwardingStatsRequest, ListChannelPairForwardingStatsRequest,
-	ListForwardedPaymentsRequest, OnchainReceiveRequest, OpenChannelRequest,
+	Bolt12ReceiveRefundRequest, Bolt12ReceiveRequest, GetChannelForwardingStatsRequest,
+	GetForwardedPaymentDetailsRequest, ListChannelForwardingStatsRequest,
+	ListChannelPairForwardingStatsRequest, ListForwardedPaymentsRequest, OnchainReceiveRequest,
+	OpenChannelRequest,
 };
 use ldk_server_client::ldk_server_grpc::events::event_envelope::Event;
 use ldk_server_client::ldk_server_grpc::events::{
@@ -2170,11 +2171,12 @@ async fn test_bolt12_offer_with_ssps_rails_is_payable() {
 	let event_b = wait_for_event(&mut events_b, |e| matches!(e, Event::PaymentReceived(_))).await;
 	assert!(matches!(&event_b.event, Some(Event::PaymentReceived(_))));
 
-	// Rails require a fixed amount.
-	let err = server_b
+	// Entries may be objects, and the record may sit on an amountless offer.
+	let rails = r#"[{"rail":"ln","min_msat":1000},"btc:regtest"]"#;
+	let offer_resp = server_b
 		.client()
 		.bolt12_receive(Bolt12ReceiveRequest {
-			description: "no amount".to_string(),
+			description: "universal amountless offer".to_string(),
 			amount_msat: None,
 			expiry_secs: None,
 			quantity: None,
@@ -2182,6 +2184,45 @@ async fn test_bolt12_offer_with_ssps_rails_is_payable() {
 			min_final_cltv_expiry_delta: None,
 			ssps_rails: Some(rails.to_string()),
 		})
-		.await;
-	assert!(err.is_err());
+		.await
+		.unwrap();
+	let offer = Offer::from_str(&offer_resp.offer).unwrap();
+	assert!(offer.amount().is_none());
+	let mut record = vec![0xfe];
+	record.extend_from_slice(&1_000_000_385u32.to_be_bytes());
+	record.push(rails.len() as u8);
+	record.extend_from_slice(rails.as_bytes());
+	let bytes: &[u8] = offer.as_ref();
+	assert!(bytes.windows(record.len()).any(|w| w == record), "offer must carry ssps_rails");
+
+	let output = run_cli(&server_a, &["bolt12-send", &offer_resp.offer, "5000sat"]);
+	assert!(!output["payment_id"].as_str().unwrap().is_empty());
+	let event_a = wait_for_event(&mut events_a, |e| matches!(e, Event::PaymentSuccessful(_))).await;
+	assert!(matches!(&event_a.event, Some(Event::PaymentSuccessful(_))));
+	let event_b = wait_for_event(&mut events_b, |e| matches!(e, Event::PaymentReceived(_))).await;
+	let Some(Event::PaymentReceived(received)) = &event_b.event else {
+		panic!("expected PaymentReceived");
+	};
+	assert_eq!(received.payment.as_ref().unwrap().amount_msat, Some(5_000_000));
+
+	// Invalid rails, and rails with an external payment hash, are rejected.
+	let payment_hash = sha256::Hash::hash(&[7u8; 32]).to_byte_array().to_lower_hex_string();
+	for (rails, payment_hash) in
+		[("[]", None), (r#""ln""#, None), (r#"["ln",1]"#, None), (r#"["ln"]"#, Some(payment_hash))]
+	{
+		let error = server_b
+			.client()
+			.bolt12_receive(Bolt12ReceiveRequest {
+				description: "rejected".to_string(),
+				amount_msat: Some(10_000_000),
+				expiry_secs: None,
+				quantity: None,
+				payment_hash,
+				min_final_cltv_expiry_delta: None,
+				ssps_rails: Some(rails.to_string()),
+			})
+			.await
+			.unwrap_err();
+		assert_eq!(error.error_code, InvalidRequestError, "{rails}");
+	}
 }

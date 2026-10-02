@@ -44,6 +44,27 @@ pub(crate) fn parse_payment_hash(hex: &str) -> Result<PaymentHash, LdkServerErro
 	})
 }
 
+const MAX_SSPS_RAILS: usize = 32;
+
+/// Accepts a non-empty JSON array of at most [`MAX_SSPS_RAILS`] entries, each a rail-id string or
+/// an object.
+pub(crate) fn validate_ssps_rails(rails: &str) -> Result<(), LdkServerError> {
+	let valid = serde_json::from_str::<Vec<serde_json::Value>>(rails).is_ok_and(|entries| {
+		!entries.is_empty()
+			&& entries.len() <= MAX_SSPS_RAILS
+			&& entries.iter().all(|entry| entry.is_string() || entry.is_object())
+	});
+	if !valid {
+		return Err(LdkServerError::new(
+			InvalidRequestError,
+			format!(
+				"ssps_rails must be a JSON array of 1 to {MAX_SSPS_RAILS} rail-id strings or objects."
+			),
+		));
+	}
+	Ok(())
+}
+
 pub(crate) async fn handle_bolt12_receive_request(
 	context: Arc<Context>, request: Bolt12ReceiveRequest,
 ) -> Result<Bolt12ReceiveResponse, LdkServerError> {
@@ -51,26 +72,28 @@ pub(crate) async fn handle_bolt12_receive_request(
 	let min_final_cltv_expiry_delta =
 		parse_min_final_cltv_expiry_delta(request.min_final_cltv_expiry_delta, payment_hash)?;
 	if let Some(rails) = request.ssps_rails {
-		let trimmed = rails.trim();
-		if !(trimmed.starts_with("[\"") && trimmed.ends_with(']')) {
+		validate_ssps_rails(&rails)?;
+		if payment_hash.is_some() {
 			return Err(LdkServerError::new(
 				InvalidRequestError,
-				"ssps_rails must be a non-empty JSON array of rail ids.".to_string(),
+				"ssps_rails cannot be combined with payment_hash.".to_string(),
 			));
 		}
-		let (Some(amount_msat), None) = (request.amount_msat, payment_hash) else {
-			return Err(LdkServerError::new(
-				InvalidRequestError,
-				"ssps_rails requires amount_msat and no payment_hash.".to_string(),
-			));
+		let bolt12_payment = context.node.bolt12_payment();
+		let offer = match request.amount_msat {
+			Some(amount_msat) => bolt12_payment.receive_with_ssps_rails(
+				amount_msat,
+				&request.description,
+				request.expiry_secs,
+				request.quantity,
+				rails,
+			)?,
+			None => bolt12_payment.receive_variable_amount_with_ssps_rails(
+				&request.description,
+				request.expiry_secs,
+				rails,
+			)?,
 		};
-		let offer = context.node.bolt12_payment().receive_with_ssps_rails(
-			amount_msat,
-			&request.description,
-			request.expiry_secs,
-			request.quantity,
-			rails,
-		)?;
 		let offer_id = offer.id().0.to_lower_hex_string();
 		return Ok(Bolt12ReceiveResponse { offer: offer.to_string(), offer_id });
 	}
@@ -105,4 +128,38 @@ pub(crate) async fn handle_bolt12_receive_request(
 	let offer_id = offer.id().0.to_lower_hex_string();
 	let response = Bolt12ReceiveResponse { offer: offer.to_string(), offer_id };
 	Ok(response)
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use crate::api::error::LdkServerErrorCode;
+
+	#[test]
+	fn ssps_rails_accepts_strings_and_objects() {
+		assert!(validate_ssps_rails(r#"["btc:signet","ln"]"#).is_ok());
+		assert!(validate_ssps_rails(r#"[{"rail":"ln","min_msat":1000},"btc:signet"]"#).is_ok());
+		assert!(validate_ssps_rails(r#" [{"rail":"ln"}] "#).is_ok());
+		let max = format!("[{}]", vec![r#""ln""#; MAX_SSPS_RAILS].join(","));
+		assert!(validate_ssps_rails(&max).is_ok());
+	}
+
+	#[test]
+	fn ssps_rails_rejects_invalid_input() {
+		let too_many = format!("[{}]", vec![r#""ln""#; MAX_SSPS_RAILS + 1].join(","));
+		for rails in [
+			"",
+			"[]",
+			r#""ln""#,
+			r#"{"rail":"ln"}"#,
+			r#"["ln",1]"#,
+			r#"["ln",null]"#,
+			r#"[["ln"]]"#,
+			r#"["ln""#,
+			too_many.as_str(),
+		] {
+			let error = validate_ssps_rails(rails).unwrap_err();
+			assert_eq!(error.error_code, LdkServerErrorCode::InvalidRequestError, "{rails}");
+		}
+	}
 }

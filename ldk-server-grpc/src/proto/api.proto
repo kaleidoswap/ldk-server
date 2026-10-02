@@ -365,8 +365,8 @@ message Bolt12ReceiveRequest {
   optional uint32 min_final_cltv_expiry_delta = 6;
 
   // Experimental `ssps_rails` offer record (type 1000000385): the payment rails accepted, as a
-  // JSON array of rail ids, e.g. `["btc:signet","ln"]`. Requires `amount_msat`; not combinable
-  // with `payment_hash`.
+  // JSON array of 1 to 32 entries, each a rail-id string or an object, e.g. `["btc:signet","ln"]`.
+  // Without `amount_msat` the offer is amountless. Not combinable with `payment_hash`.
   optional string ssps_rails = 7;
 }
 

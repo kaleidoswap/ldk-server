@@ -299,7 +299,10 @@ enum Commands {
 		payment_hash: Option<String>,
 		#[arg(long, help = "With --payment-hash: minimum final CLTV expiry delta, in blocks")]
 		min_final_cltv_expiry_delta: Option<u32>,
-		#[arg(long, help = "Experimental SSPS rails record, a JSON array such as '[\"btc:signet\",\"ln\"]'")]
+		#[arg(
+			long,
+			help = "Experimental SSPS rails record: a JSON array of rail-id strings or objects, e.g. '[\"btc:signet\",\"ln\"]'"
+		)]
 		ssps_rails: Option<String>,
 	},
 	#[command(about = "Send a payment for a BOLT12 offer")]
