@@ -24,9 +24,9 @@ use ldk_server_grpc::endpoints::{
 	ABANDON_BOLT12_INVOICE_PATH, BOLT11_CLAIM_FOR_HASH_PATH, BOLT11_FAIL_FOR_HASH_PATH,
 	BOLT11_RECEIVE_FOR_HASH_PATH, BOLT11_RECEIVE_PATH,
 	BOLT11_RECEIVE_VARIABLE_AMOUNT_VIA_JIT_CHANNEL_PATH, BOLT11_RECEIVE_VIA_JIT_CHANNEL_PATH,
-	BOLT11_SEND_PATH, BOLT12_FETCH_INVOICE_PATH, BOLT12_PAY_INVOICE_PATH, BOLT12_RECEIVE_PATH,
-	BOLT12_SEND_PATH, CLOSE_CHANNEL_PATH, CONNECT_PEER_PATH, DECODE_INVOICE_PATH,
-	DECODE_OFFER_PATH, DISCONNECT_PEER_PATH, EXPORT_PATHFINDING_SCORES_PATH,
+	BOLT11_SEND_PATH, BOLT11_SEND_PROBES_PATH, BOLT12_FETCH_INVOICE_PATH, BOLT12_PAY_INVOICE_PATH,
+	BOLT12_RECEIVE_PATH, BOLT12_SEND_PATH, CLOSE_CHANNEL_PATH, CONNECT_PEER_PATH,
+	DECODE_INVOICE_PATH, DECODE_OFFER_PATH, DISCONNECT_PEER_PATH, EXPORT_PATHFINDING_SCORES_PATH,
 	FORCE_CLOSE_CHANNEL_PATH, GET_BALANCES_PATH, GET_FINANCIAL_INVENTORY_PATH, GET_METRICS_PATH,
 	GET_NODE_INFO_PATH, GET_PAYMENT_DETAILS_PATH, GRAPH_GET_CHANNEL_PATH, GRAPH_GET_NODE_PATH,
 	GRAPH_LIST_CHANNELS_PATH, GRAPH_LIST_NODES_PATH, LIST_CHANNELS_PATH,
@@ -55,6 +55,7 @@ use crate::api::bolt11_receive_via_jit_channel::{
 	handle_bolt11_receive_via_jit_channel_request,
 };
 use crate::api::bolt11_send::handle_bolt11_send_request;
+use crate::api::bolt11_send_probes::handle_bolt11_send_probes_request;
 use crate::api::bolt12_fetch_invoice::handle_bolt12_fetch_invoice_request;
 use crate::api::bolt12_pay_invoice::handle_bolt12_pay_invoice_request;
 use crate::api::bolt12_receive::handle_bolt12_receive_request;
@@ -333,6 +334,9 @@ impl Service<Request<Incoming>> for NodeService {
 				},
 				BOLT11_SEND_PATH => {
 					handle_grpc_unary(context, body_bytes, handle_bolt11_send_request).await
+				},
+				BOLT11_SEND_PROBES_PATH => {
+					handle_grpc_unary(context, body_bytes, handle_bolt11_send_probes_request).await
 				},
 				BOLT12_RECEIVE_PATH => {
 					handle_grpc_unary(context, body_bytes, handle_bolt12_receive_request).await

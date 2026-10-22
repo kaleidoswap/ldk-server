@@ -298,6 +298,30 @@ message Bolt11SendResponse {
   string payment_id = 1;
 }
 
+// Find a route for a BOLT11 invoice and send probes along it, without paying.
+// See more: https://docs.rs/ldk-node/latest/ldk_node/payment/struct.Bolt11Payment.html#method.send_probes
+message Bolt11SendProbesRequest {
+
+  // An invoice for a payment within the Lightning Network.
+  string invoice = 1;
+
+  // Set this field when probing a so-called "zero-amount" invoice.
+  optional uint64 amount_msat = 2;
+
+  // Configuration options for payment routing and pathfinding. The route must fit within the
+  // routing fee and CLTV limits set here.
+  optional types.RouteParametersConfig route_parameters = 3;
+
+}
+
+// The response for the `Bolt11SendProbes` RPC. On failure, a gRPC error status is returned.
+message Bolt11SendProbesResponse {
+
+  // Whether a route within the given limits was found. When true, probes were sent along it;
+  // their outcome arrives later and only trains the scorer.
+  bool route_found = 1;
+}
+
 // Returns a BOLT12 offer for the given amount, if specified.
 //
 // See more:
@@ -993,6 +1017,8 @@ service LightningNode {
   rpc Bolt11ReceiveVariableAmountViaJitChannel(Bolt11ReceiveVariableAmountViaJitChannelRequest) returns (Bolt11ReceiveVariableAmountViaJitChannelResponse);
   // Send a payment for a BOLT11 invoice.
   rpc Bolt11Send(Bolt11SendRequest) returns (Bolt11SendResponse);
+  // Find a route for a BOLT11 invoice and probe it, without paying.
+  rpc Bolt11SendProbes(Bolt11SendProbesRequest) returns (Bolt11SendProbesResponse);
   // Return a BOLT12 offer.
   rpc Bolt12Receive(Bolt12ReceiveRequest) returns (Bolt12ReceiveResponse);
   // Send a payment for a BOLT12 offer.

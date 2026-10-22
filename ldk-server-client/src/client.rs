@@ -21,12 +21,12 @@ use ldk_server_grpc::api::{
 	Bolt11ReceiveForHashRequest, Bolt11ReceiveForHashResponse, Bolt11ReceiveRequest,
 	Bolt11ReceiveResponse, Bolt11ReceiveVariableAmountViaJitChannelRequest,
 	Bolt11ReceiveVariableAmountViaJitChannelResponse, Bolt11ReceiveViaJitChannelRequest,
-	Bolt11ReceiveViaJitChannelResponse, Bolt11SendRequest, Bolt11SendResponse,
-	Bolt12FetchInvoiceRequest, Bolt12FetchInvoiceResponse, Bolt12PayInvoiceRequest,
-	Bolt12PayInvoiceResponse, Bolt12ReceiveRequest, Bolt12ReceiveResponse, Bolt12SendRequest,
-	Bolt12SendResponse, CloseChannelRequest, CloseChannelResponse, ConnectPeerRequest,
-	ConnectPeerResponse, DecodeInvoiceRequest, DecodeInvoiceResponse, DecodeOfferRequest,
-	DecodeOfferResponse, DisconnectPeerRequest, DisconnectPeerResponse,
+	Bolt11ReceiveViaJitChannelResponse, Bolt11SendProbesRequest, Bolt11SendProbesResponse,
+	Bolt11SendRequest, Bolt11SendResponse, Bolt12FetchInvoiceRequest, Bolt12FetchInvoiceResponse,
+	Bolt12PayInvoiceRequest, Bolt12PayInvoiceResponse, Bolt12ReceiveRequest, Bolt12ReceiveResponse,
+	Bolt12SendRequest, Bolt12SendResponse, CloseChannelRequest, CloseChannelResponse,
+	ConnectPeerRequest, ConnectPeerResponse, DecodeInvoiceRequest, DecodeInvoiceResponse,
+	DecodeOfferRequest, DecodeOfferResponse, DisconnectPeerRequest, DisconnectPeerResponse,
 	ExportPathfindingScoresRequest, ExportPathfindingScoresResponse, ForceCloseChannelRequest,
 	ForceCloseChannelResponse, GetBalancesRequest, GetBalancesResponse,
 	GetFinancialInventoryRequest, GetFinancialInventoryResponse, GetNodeInfoRequest,
@@ -47,9 +47,9 @@ use ldk_server_grpc::endpoints::{
 	ABANDON_BOLT12_INVOICE_PATH, BOLT11_CLAIM_FOR_HASH_PATH, BOLT11_FAIL_FOR_HASH_PATH,
 	BOLT11_RECEIVE_FOR_HASH_PATH, BOLT11_RECEIVE_PATH,
 	BOLT11_RECEIVE_VARIABLE_AMOUNT_VIA_JIT_CHANNEL_PATH, BOLT11_RECEIVE_VIA_JIT_CHANNEL_PATH,
-	BOLT11_SEND_PATH, BOLT12_FETCH_INVOICE_PATH, BOLT12_PAY_INVOICE_PATH, BOLT12_RECEIVE_PATH,
-	BOLT12_SEND_PATH, CLOSE_CHANNEL_PATH, CONNECT_PEER_PATH, DECODE_INVOICE_PATH,
-	DECODE_OFFER_PATH, DISCONNECT_PEER_PATH, EXPORT_PATHFINDING_SCORES_PATH,
+	BOLT11_SEND_PATH, BOLT11_SEND_PROBES_PATH, BOLT12_FETCH_INVOICE_PATH, BOLT12_PAY_INVOICE_PATH,
+	BOLT12_RECEIVE_PATH, BOLT12_SEND_PATH, CLOSE_CHANNEL_PATH, CONNECT_PEER_PATH,
+	DECODE_INVOICE_PATH, DECODE_OFFER_PATH, DISCONNECT_PEER_PATH, EXPORT_PATHFINDING_SCORES_PATH,
 	FORCE_CLOSE_CHANNEL_PATH, GET_BALANCES_PATH, GET_FINANCIAL_INVENTORY_PATH, GET_METRICS_PATH,
 	GET_NODE_INFO_PATH, GET_PAYMENT_DETAILS_PATH, GRAPH_GET_CHANNEL_PATH, GRAPH_GET_NODE_PATH,
 	GRAPH_LIST_CHANNELS_PATH, GRAPH_LIST_NODES_PATH, GRPC_SERVICE_PREFIX, LIST_CHANNELS_PATH,
@@ -244,6 +244,13 @@ impl LdkServerClient {
 		&self, request: Bolt11SendRequest,
 	) -> Result<Bolt11SendResponse, LdkServerError> {
 		self.grpc_unary(&request, BOLT11_SEND_PATH).await
+	}
+
+	/// Find a route for a BOLT11 invoice and probe it, without paying.
+	pub async fn bolt11_send_probes(
+		&self, request: Bolt11SendProbesRequest,
+	) -> Result<Bolt11SendProbesResponse, LdkServerError> {
+		self.grpc_unary(&request, BOLT11_SEND_PROBES_PATH).await
 	}
 
 	/// Retrieve a new BOLT12 offer.
