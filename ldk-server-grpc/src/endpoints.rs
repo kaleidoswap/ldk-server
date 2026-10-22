@@ -26,6 +26,7 @@ pub const BOLT11_FIND_ROUTE_PATH: &str = "Bolt11FindRoute";
 pub const BOLT12_RECEIVE_PATH: &str = "Bolt12Receive";
 pub const BOLT12_SEND_PATH: &str = "Bolt12Send";
 pub const BOLT12_FETCH_INVOICE_PATH: &str = "Bolt12FetchInvoice";
+pub const BOLT12_FIND_ROUTE_PATH: &str = "Bolt12FindRoute";
 pub const BOLT12_PAY_INVOICE_PATH: &str = "Bolt12PayInvoice";
 pub const ABANDON_BOLT12_INVOICE_PATH: &str = "AbandonBolt12Invoice";
 pub const OPEN_CHANNEL_PATH: &str = "OpenChannel";
