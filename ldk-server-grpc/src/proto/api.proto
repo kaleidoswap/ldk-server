@@ -298,6 +298,36 @@ message Bolt11SendResponse {
   string payment_id = 1;
 }
 
+// Check whether a route exists that would pay a BOLT11 invoice, without paying it and without
+// sending any HTLC.
+// See more: https://docs.rs/ldk-node/latest/ldk_node/payment/struct.Bolt11Payment.html#method.has_route
+message Bolt11FindRouteRequest {
+
+  // An invoice for a payment within the Lightning Network.
+  string invoice = 1;
+
+  // Set this field when checking a so-called "zero-amount" invoice, or to check a larger amount
+  // than the invoice requires.
+  optional uint64 amount_msat = 2;
+
+  // Configuration options for payment routing and pathfinding. The route must fit within the
+  // routing fee and CLTV limits set here.
+  optional types.RouteParametersConfig route_parameters = 3;
+
+}
+
+// The response for the `Bolt11FindRoute` RPC. On failure, a gRPC error status is returned.
+message Bolt11FindRouteResponse {
+
+  // Whether a route within the given limits was found in the node's network graph, using the
+  // invoice's route hints and the node's usable channels.
+  bool route_found = 1;
+
+  // How many nodes the node's network graph holds. Zero means the graph has not been synced
+  // yet, so a missing route says little.
+  uint64 graph_node_count = 2;
+}
+
 // Returns a BOLT12 offer for the given amount, if specified.
 //
 // See more:
@@ -993,6 +1023,8 @@ service LightningNode {
   rpc Bolt11ReceiveVariableAmountViaJitChannel(Bolt11ReceiveVariableAmountViaJitChannelRequest) returns (Bolt11ReceiveVariableAmountViaJitChannelResponse);
   // Send a payment for a BOLT11 invoice.
   rpc Bolt11Send(Bolt11SendRequest) returns (Bolt11SendResponse);
+  // Check whether a route exists for a BOLT11 invoice, without paying it.
+  rpc Bolt11FindRoute(Bolt11FindRouteRequest) returns (Bolt11FindRouteResponse);
   // Return a BOLT12 offer.
   rpc Bolt12Receive(Bolt12ReceiveRequest) returns (Bolt12ReceiveResponse);
   // Send a payment for a BOLT12 offer.

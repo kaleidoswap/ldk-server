@@ -378,6 +378,43 @@ pub struct Bolt11SendResponse {
 	#[prost(string, tag = "1")]
 	pub payment_id: ::prost::alloc::string::String,
 }
+/// Check whether a route exists that would pay a BOLT11 invoice, without paying it and without
+/// sending any HTLC.
+/// See more: <https://docs.rs/ldk-node/latest/ldk_node/payment/struct.Bolt11Payment.html#method.has_route>
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Bolt11FindRouteRequest {
+	/// An invoice for a payment within the Lightning Network.
+	#[prost(string, tag = "1")]
+	pub invoice: ::prost::alloc::string::String,
+	/// Set this field when checking a so-called "zero-amount" invoice, or to check a larger amount
+	/// than the invoice requires.
+	#[prost(uint64, optional, tag = "2")]
+	pub amount_msat: ::core::option::Option<u64>,
+	/// Configuration options for payment routing and pathfinding. The route must fit within the
+	/// routing fee and CLTV limits set here.
+	#[prost(message, optional, tag = "3")]
+	pub route_parameters: ::core::option::Option<super::types::RouteParametersConfig>,
+}
+/// The response for the `Bolt11FindRoute` RPC. On failure, a gRPC error status is returned.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Bolt11FindRouteResponse {
+	/// Whether a route within the given limits was found in the node's network graph, using the
+	/// invoice's route hints and the node's usable channels.
+	#[prost(bool, tag = "1")]
+	pub route_found: bool,
+	/// How many nodes the node's network graph holds. Zero means the graph has not been synced
+	/// yet, so a missing route says little.
+	#[prost(uint64, tag = "2")]
+	pub graph_node_count: u64,
+}
 /// Returns a BOLT12 offer for the given amount, if specified.
 ///
 /// See more:

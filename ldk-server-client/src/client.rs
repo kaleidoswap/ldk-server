@@ -18,8 +18,9 @@ use hyper_rustls::{HttpsConnector, HttpsConnectorBuilder};
 use ldk_server_grpc::api::{
 	AbandonBolt12InvoiceRequest, AbandonBolt12InvoiceResponse, Bolt11ClaimForHashRequest,
 	Bolt11ClaimForHashResponse, Bolt11FailForHashRequest, Bolt11FailForHashResponse,
-	Bolt11ReceiveForHashRequest, Bolt11ReceiveForHashResponse, Bolt11ReceiveRequest,
-	Bolt11ReceiveResponse, Bolt11ReceiveVariableAmountViaJitChannelRequest,
+	Bolt11FindRouteRequest, Bolt11FindRouteResponse, Bolt11ReceiveForHashRequest,
+	Bolt11ReceiveForHashResponse, Bolt11ReceiveRequest, Bolt11ReceiveResponse,
+	Bolt11ReceiveVariableAmountViaJitChannelRequest,
 	Bolt11ReceiveVariableAmountViaJitChannelResponse, Bolt11ReceiveViaJitChannelRequest,
 	Bolt11ReceiveViaJitChannelResponse, Bolt11SendRequest, Bolt11SendResponse,
 	Bolt12FetchInvoiceRequest, Bolt12FetchInvoiceResponse, Bolt12PayInvoiceRequest,
@@ -45,7 +46,7 @@ use ldk_server_grpc::api::{
 };
 use ldk_server_grpc::endpoints::{
 	ABANDON_BOLT12_INVOICE_PATH, BOLT11_CLAIM_FOR_HASH_PATH, BOLT11_FAIL_FOR_HASH_PATH,
-	BOLT11_RECEIVE_FOR_HASH_PATH, BOLT11_RECEIVE_PATH,
+	BOLT11_FIND_ROUTE_PATH, BOLT11_RECEIVE_FOR_HASH_PATH, BOLT11_RECEIVE_PATH,
 	BOLT11_RECEIVE_VARIABLE_AMOUNT_VIA_JIT_CHANNEL_PATH, BOLT11_RECEIVE_VIA_JIT_CHANNEL_PATH,
 	BOLT11_SEND_PATH, BOLT12_FETCH_INVOICE_PATH, BOLT12_PAY_INVOICE_PATH, BOLT12_RECEIVE_PATH,
 	BOLT12_SEND_PATH, CLOSE_CHANNEL_PATH, CONNECT_PEER_PATH, DECODE_INVOICE_PATH,
@@ -244,6 +245,13 @@ impl LdkServerClient {
 		&self, request: Bolt11SendRequest,
 	) -> Result<Bolt11SendResponse, LdkServerError> {
 		self.grpc_unary(&request, BOLT11_SEND_PATH).await
+	}
+
+	/// Check whether a route exists for a BOLT11 invoice, without paying it.
+	pub async fn bolt11_find_route(
+		&self, request: Bolt11FindRouteRequest,
+	) -> Result<Bolt11FindRouteResponse, LdkServerError> {
+		self.grpc_unary(&request, BOLT11_FIND_ROUTE_PATH).await
 	}
 
 	/// Retrieve a new BOLT12 offer.
