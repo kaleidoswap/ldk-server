@@ -8,8 +8,9 @@ edition = "2021"
 # ldk-node#831 "manually handle BOLT12 invoices" cherry-picked on top, for the
 # BOLT12 fetch/pay-invoice RPCs. Deliberately NOT the 00dba456-based branch:
 # that base carries the one-way FileSystemStoreV2 migration.
-# Adds the read-only financial inventory extension on the same storage baseline.
-ldk-node = { git = "https://github.com/kaleidoswap/ldk-node", rev = "cbeb9559021dd83094f90e230474268a66ba2227" }
+# Adds the read-only financial inventory extension on the same storage baseline,
+# and Bolt11Payment::has_route for the Bolt11FindRoute RPC.
+ldk-node = { git = "https://github.com/kaleidoswap/ldk-node", rev = "4ce75fbafc7dde71055b6c44694708be4c5a02f8" }
 serde = { version = "1.0.203", default-features = false, features = ["derive"] }
 hyper = { version = "1", default-features = false, features = ["server", "http2"] }
 http-body-util = { version = "0.1", default-features = false }

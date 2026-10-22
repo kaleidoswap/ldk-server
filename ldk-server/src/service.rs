@@ -22,7 +22,7 @@ use ldk_node::lightning::ln::channelmanager::PaymentId;
 use ldk_node::Node;
 use ldk_server_grpc::endpoints::{
 	ABANDON_BOLT12_INVOICE_PATH, BOLT11_CLAIM_FOR_HASH_PATH, BOLT11_FAIL_FOR_HASH_PATH,
-	BOLT11_RECEIVE_FOR_HASH_PATH, BOLT11_RECEIVE_PATH,
+	BOLT11_FIND_ROUTE_PATH, BOLT11_RECEIVE_FOR_HASH_PATH, BOLT11_RECEIVE_PATH,
 	BOLT11_RECEIVE_VARIABLE_AMOUNT_VIA_JIT_CHANNEL_PATH, BOLT11_RECEIVE_VIA_JIT_CHANNEL_PATH,
 	BOLT11_SEND_PATH, BOLT12_FETCH_INVOICE_PATH, BOLT12_PAY_INVOICE_PATH, BOLT12_RECEIVE_PATH,
 	BOLT12_SEND_PATH, CLOSE_CHANNEL_PATH, CONNECT_PEER_PATH, DECODE_INVOICE_PATH,
@@ -48,6 +48,7 @@ use tokio::sync::{broadcast, mpsc};
 use crate::api::abandon_bolt12_invoice::handle_abandon_bolt12_invoice_request;
 use crate::api::bolt11_claim_for_hash::handle_bolt11_claim_for_hash_request;
 use crate::api::bolt11_fail_for_hash::handle_bolt11_fail_for_hash_request;
+use crate::api::bolt11_find_route::handle_bolt11_find_route_request;
 use crate::api::bolt11_receive::handle_bolt11_receive_request;
 use crate::api::bolt11_receive_for_hash::handle_bolt11_receive_for_hash_request;
 use crate::api::bolt11_receive_via_jit_channel::{
@@ -333,6 +334,9 @@ impl Service<Request<Incoming>> for NodeService {
 				},
 				BOLT11_SEND_PATH => {
 					handle_grpc_unary(context, body_bytes, handle_bolt11_send_request).await
+				},
+				BOLT11_FIND_ROUTE_PATH => {
+					handle_grpc_unary(context, body_bytes, handle_bolt11_find_route_request).await
 				},
 				BOLT12_RECEIVE_PATH => {
 					handle_grpc_unary(context, body_bytes, handle_bolt12_receive_request).await
