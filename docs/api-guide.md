@@ -113,6 +113,7 @@ RPCs with no permission mapping return `UNIMPLEMENTED`, even for admin tokens.
 | `utilities:read` | Decode invoices and offers |
 | `events:read` | Subscribe to the event stream |
 | `macaroons:manage` | Create, list, and revoke macaroons within your permissions |
+| `inventory:read` | Read the financial inventory: wallet UTXOs, channels, HTLCs, monitor claims, sweeps, and payments |
 
 MCP provides token management through `create_macaroon`, `list_macaroons`, `revoke_macaroon`,
 and `get_permissions`.

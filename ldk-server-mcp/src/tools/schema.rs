@@ -506,6 +506,10 @@ pub fn bolt12_send_schema() -> Value {
 	})
 }
 
+pub fn get_financial_inventory_schema() -> Value {
+	json!({ "type": "object", "properties": {}, "required": [] })
+}
+
 pub fn bolt12_find_route_schema() -> Value {
 	json!({
 		"type": "object",

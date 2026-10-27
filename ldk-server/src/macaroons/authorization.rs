@@ -44,6 +44,7 @@ mod tests {
 			("Bolt11SendUnderpaying", Some("payments:send")),
 			("Bolt12Receive", Some("invoices:create")),
 			("Bolt12Send", Some("payments:send")),
+			("GetFinancialInventory", Some("inventory:read")),
 			("Bolt12FindRoute", Some("payments:send")),
 			("Bolt12FetchInvoice", Some("payments:send")),
 			("Bolt12PayInvoice", Some("payments:send")),

@@ -21,9 +21,10 @@ use ldk_server_client::ldk_server_grpc::api::{
 	CloseChannelRequest, ConnectPeerRequest, CreateMacaroonRequest, DecodeInvoiceRequest,
 	DecodeOfferRequest, DisconnectPeerRequest, ExportPathfindingScoresRequest,
 	ForceCloseChannelRequest, GetBalancesRequest, GetChannelForwardingStatsRequest,
-	GetForwardedPaymentDetailsRequest, GetForwardedPaymentTrackingModeRequest, GetNodeInfoRequest,
-	GetPaymentDetailsRequest, GetPermissionsRequest, GraphGetChannelRequest, GraphGetNodeRequest,
-	GraphListChannelsRequest, GraphListNodesRequest, ListChannelForwardingStatsRequest,
+	GetFinancialInventoryRequest, GetForwardedPaymentDetailsRequest,
+	GetForwardedPaymentTrackingModeRequest, GetNodeInfoRequest, GetPaymentDetailsRequest,
+	GetPermissionsRequest, GraphGetChannelRequest, GraphGetNodeRequest, GraphListChannelsRequest,
+	GraphListNodesRequest, ListChannelForwardingStatsRequest,
 	ListChannelPairForwardingStatsRequest, ListChannelsRequest, ListForwardedPaymentsRequest,
 	ListMacaroonsRequest, ListPaymentsRequest, ListPeersRequest, OnchainBumpFeeRequest,
 	OnchainReceiveRequest, OnchainSendRequest, OpenChannelRequest, RevokeMacaroonRequest,
@@ -342,6 +343,16 @@ pub async fn handle_bolt12_send(client: &LdkServerClient, args: Value) -> Result
 	let response = client.bolt12_send(request).await.map_err(McpError::from)?;
 	serialize_response(response)
 }
+pub async fn handle_get_financial_inventory(
+	client: &LdkServerClient, _args: Value,
+) -> Result<Value, McpError> {
+	let response = client
+		.get_financial_inventory(GetFinancialInventoryRequest {})
+		.await
+		.map_err(McpError::from)?;
+	serialize_response(response)
+}
+
 pub async fn handle_bolt12_find_route(
 	client: &LdkServerClient, args: Value,
 ) -> Result<Value, McpError> {
