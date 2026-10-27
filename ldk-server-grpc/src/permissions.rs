@@ -49,9 +49,12 @@ pub const GRAPH_READ_PERMISSION: &str = "graph:read";
 pub const UTILITIES_READ_PERMISSION: &str = "utilities:read";
 pub const EVENTS_READ_PERMISSION: &str = "events:read";
 pub const MACAROONS_MANAGE_PERMISSION: &str = "macaroons:manage";
+/// Wallet, channel, HTLC, monitor, sweep and payment evidence in one read. It spans what
+/// node:read, channels:read and payments:read guard separately, so it has its own scope.
+pub const INVENTORY_READ_PERMISSION: &str = "inventory:read";
 
 /// All permissions accepted when a macaroon is created.
-pub const ALL_PERMISSIONS: [&str; 19] = [
+pub const ALL_PERMISSIONS: [&str; 20] = [
 	ADMIN_PERMISSION,
 	NODE_READ_PERMISSION,
 	ONCHAIN_RECEIVE_PERMISSION,
@@ -71,10 +74,11 @@ pub const ALL_PERMISSIONS: [&str; 19] = [
 	UTILITIES_READ_PERMISSION,
 	EVENTS_READ_PERMISSION,
 	MACAROONS_MANAGE_PERMISSION,
+	INVENTORY_READ_PERMISSION,
 ];
 
 /// Permissions included in the CLI `readonly` preset.
-pub const READONLY_PERMISSIONS: [&str; 8] = [
+pub const READONLY_PERMISSIONS: [&str; 9] = [
 	NODE_READ_PERMISSION,
 	PAYMENTS_READ_PERMISSION,
 	CHANNELS_READ_PERMISSION,
@@ -83,6 +87,7 @@ pub const READONLY_PERMISSIONS: [&str; 8] = [
 	GRAPH_READ_PERMISSION,
 	UTILITIES_READ_PERMISSION,
 	EVENTS_READ_PERMISSION,
+	INVENTORY_READ_PERMISSION,
 ];
 
 /// Permissions included in the CLI `invoice` preset.
@@ -188,8 +193,8 @@ pub fn method_authorization(method: &str) -> MethodAuthorization {
 		| SPONTANEOUS_SEND_PATH
 		| UNIFIED_SEND_PATH
 		| SPLICE_OUT_PATH => MethodAuthorization::Permission(PAYMENTS_SEND_PERMISSION),
-		GET_FINANCIAL_INVENTORY_PATH
-		| GET_PAYMENT_DETAILS_PATH
+		GET_FINANCIAL_INVENTORY_PATH => MethodAuthorization::Permission(INVENTORY_READ_PERMISSION),
+		GET_PAYMENT_DETAILS_PATH
 		| LIST_PAYMENTS_PATH
 		| LIST_FORWARDED_PAYMENTS_PATH
 		| GET_FORWARDED_PAYMENT_DETAILS_PATH

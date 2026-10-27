@@ -101,7 +101,7 @@ RPCs with no permission mapping return `UNIMPLEMENTED`, even for admin tokens.
 | `invoices:create` | Create BOLT11/BOLT12 invoices and incoming refund requests |
 | `payments:read` | Read payments, forwarded payments, and forwarding statistics |
 | `payments:claim` | Claim or fail held BOLT11 payments |
-| `payments:send` | Send BOLT11, BOLT12, spontaneous, unified, and refund payments; splice out |
+| `payments:send` | Send BOLT11, BOLT12, spontaneous, unified, and refund payments; fetch, pay, or abandon a BOLT12 invoice; check a route without paying; splice out |
 | `channels:read` | List channels |
 | `channels:manage` | Open, configure, cooperatively close, splice funds into channels, or bump pending splice fees |
 | `channels:force_close` | Force-close channels |
@@ -113,6 +113,7 @@ RPCs with no permission mapping return `UNIMPLEMENTED`, even for admin tokens.
 | `utilities:read` | Decode invoices and offers |
 | `events:read` | Subscribe to the event stream |
 | `macaroons:manage` | Create, list, and revoke macaroons within your permissions |
+| `inventory:read` | Read the financial inventory: wallet UTXOs, channels, HTLCs, monitor claims, sweeps, and payments |
 
 MCP provides token management through `create_macaroon`, `list_macaroons`, `revoke_macaroon`,
 and `get_permissions`.
