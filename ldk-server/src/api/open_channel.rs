@@ -41,6 +41,7 @@ pub(crate) async fn handle_open_channel(
 				node_id,
 				address,
 				request.push_to_counterparty_msat,
+				None,
 				channel_config,
 			)?,
 			(true, false, Amount::ChannelAmountSats(amount_sats)) => {
@@ -49,6 +50,7 @@ pub(crate) async fn handle_open_channel(
 					address,
 					amount_sats,
 					request.push_to_counterparty_msat,
+					None,
 					channel_config,
 				)?
 			},
@@ -56,6 +58,7 @@ pub(crate) async fn handle_open_channel(
 				node_id,
 				address,
 				request.push_to_counterparty_msat,
+				None,
 				channel_config,
 			)?,
 			(false, true, Amount::ChannelAmountSats(amount_sats)) => {
@@ -64,6 +67,7 @@ pub(crate) async fn handle_open_channel(
 					address,
 					amount_sats,
 					request.push_to_counterparty_msat,
+					None,
 					channel_config,
 				)?
 			},
@@ -71,6 +75,7 @@ pub(crate) async fn handle_open_channel(
 				node_id,
 				address,
 				request.push_to_counterparty_msat,
+				None,
 				channel_config,
 			)?,
 			(false, false, Amount::ChannelAmountSats(amount_sats)) => context.node.open_channel(
@@ -78,6 +83,7 @@ pub(crate) async fn handle_open_channel(
 				address,
 				amount_sats,
 				request.push_to_counterparty_msat,
+				None,
 				channel_config,
 			)?,
 			(true, true, _) => {

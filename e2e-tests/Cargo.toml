@@ -21,4 +21,20 @@ ldk-server-client = { path = "../ldk-server-client" }
 ldk-server-grpc = { path = "../ldk-server-grpc", features = ["serde"] }
 serde_json = "1.0"
 hex-conservative = { version = "0.2", features = ["std"] }
-ldk-node = { git = "https://github.com/lightningdevkit/ldk-node", rev = "179b4b263762155a7ff515ddad7e757a80807fd5" }
+ldk-node = { git = "https://github.com/kaleidoswap/ldk-node", rev = "98f679a9282bc4e8ca2d8e446a658d199c19fde6" }
+
+# ldk-node is built against a rust-lightning fork with read-only accounting snapshots;
+# redirect every crate that names upstream rust-lightning to the same revision.
+[patch."https://github.com/lightningdevkit/rust-lightning"]
+lightning = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "07a689c5c7a6d4cfba735fae5f86e4506ec87221" }
+lightning-types = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "07a689c5c7a6d4cfba735fae5f86e4506ec87221" }
+lightning-invoice = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "07a689c5c7a6d4cfba735fae5f86e4506ec87221" }
+lightning-net-tokio = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "07a689c5c7a6d4cfba735fae5f86e4506ec87221" }
+lightning-persister = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "07a689c5c7a6d4cfba735fae5f86e4506ec87221" }
+lightning-background-processor = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "07a689c5c7a6d4cfba735fae5f86e4506ec87221" }
+lightning-rapid-gossip-sync = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "07a689c5c7a6d4cfba735fae5f86e4506ec87221" }
+lightning-block-sync = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "07a689c5c7a6d4cfba735fae5f86e4506ec87221" }
+lightning-transaction-sync = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "07a689c5c7a6d4cfba735fae5f86e4506ec87221" }
+lightning-liquidity = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "07a689c5c7a6d4cfba735fae5f86e4506ec87221" }
+lightning-macros = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "07a689c5c7a6d4cfba735fae5f86e4506ec87221" }
+lightning-dns-resolver = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "07a689c5c7a6d4cfba735fae5f86e4506ec87221" }
