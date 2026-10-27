@@ -46,12 +46,12 @@ use ldk_server_client::ldk_server_grpc::api::{
 	DecodeOfferRequest, DecodeOfferResponse, DisconnectPeerRequest, DisconnectPeerResponse,
 	ExportPathfindingScoresRequest, ForceCloseChannelRequest, ForceCloseChannelResponse,
 	GetBalancesRequest, GetBalancesResponse, GetChannelForwardingStatsRequest,
-	GetChannelForwardingStatsResponse, GetForwardedPaymentDetailsRequest,
-	GetForwardedPaymentDetailsResponse, GetForwardedPaymentTrackingModeRequest,
-	GetForwardedPaymentTrackingModeResponse, GetNodeInfoRequest, GetNodeInfoResponse,
-	GetPaymentDetailsRequest, GetPaymentDetailsResponse, GetPermissionsRequest,
-	GetPermissionsResponse, GraphGetChannelRequest, GraphGetChannelResponse, GraphGetNodeRequest,
-	GraphGetNodeResponse, GraphListChannelsRequest, GraphListChannelsResponse,
+	GetChannelForwardingStatsResponse, GetFinancialInventoryRequest, GetFinancialInventoryResponse,
+	GetForwardedPaymentDetailsRequest, GetForwardedPaymentDetailsResponse,
+	GetForwardedPaymentTrackingModeRequest, GetForwardedPaymentTrackingModeResponse,
+	GetNodeInfoRequest, GetNodeInfoResponse, GetPaymentDetailsRequest, GetPaymentDetailsResponse,
+	GetPermissionsRequest, GetPermissionsResponse, GraphGetChannelRequest, GraphGetChannelResponse,
+	GraphGetNodeRequest, GraphGetNodeResponse, GraphListChannelsRequest, GraphListChannelsResponse,
 	GraphListNodesRequest, GraphListNodesResponse, ListChannelForwardingStatsRequest,
 	ListChannelPairForwardingStatsRequest, ListChannelsRequest, ListChannelsResponse,
 	ListForwardedPaymentsRequest, ListMacaroonsRequest, ListMacaroonsResponse, ListPaymentsRequest,
@@ -129,6 +129,8 @@ enum Commands {
 	GetNodeInfo,
 	#[command(about = "Retrieve an overview of all known balances")]
 	GetBalances,
+	#[command(about = "Retrieve read-only UTXO, channel, HTLC, monitor and sweep evidence")]
+	GetFinancialInventory,
 	#[command(about = "Retrieve a new on-chain funding address")]
 	OnchainReceive,
 	#[command(about = "Send an on-chain payment to the given address")]
@@ -927,6 +929,11 @@ async fn main() {
 		Commands::GetNodeInfo => {
 			handle_response_result::<_, GetNodeInfoResponse>(
 				client.get_node_info(GetNodeInfoRequest {}).await,
+			);
+		},
+		Commands::GetFinancialInventory => {
+			handle_response_result::<_, GetFinancialInventoryResponse>(
+				client.get_financial_inventory(GetFinancialInventoryRequest {}).await,
 			);
 		},
 		Commands::GetBalances => {

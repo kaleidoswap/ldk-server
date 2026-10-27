@@ -73,3 +73,4 @@ pub const CREATE_MACAROON_PATH: &str = "CreateMacaroon";
 pub const LIST_MACAROONS_PATH: &str = "ListMacaroons";
 pub const REVOKE_MACAROON_PATH: &str = "RevokeMacaroon";
 pub const GET_PERMISSIONS_PATH: &str = "GetPermissions";
+pub const GET_FINANCIAL_INVENTORY_PATH: &str = "GetFinancialInventory";
