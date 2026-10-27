@@ -30,9 +30,10 @@ use ldk_server_grpc::endpoints::{
 	BUMP_CHANNEL_FUNDING_FEE_PATH, CLOSE_CHANNEL_PATH, CONNECT_PEER_PATH, CREATE_MACAROON_PATH,
 	DECODE_INVOICE_PATH, DECODE_OFFER_PATH, DISCONNECT_PEER_PATH, EXPORT_PATHFINDING_SCORES_PATH,
 	FORCE_CLOSE_CHANNEL_PATH, GET_BALANCES_PATH, GET_CHANNEL_FORWARDING_STATS_PATH,
-	GET_FORWARDED_PAYMENT_DETAILS_PATH, GET_FORWARDED_PAYMENT_TRACKING_MODE_PATH, GET_METRICS_PATH,
-	GET_NODE_INFO_PATH, GET_PAYMENT_DETAILS_PATH, GET_PERMISSIONS_PATH, GRAPH_GET_CHANNEL_PATH,
-	GRAPH_GET_NODE_PATH, GRAPH_LIST_CHANNELS_PATH, GRAPH_LIST_NODES_PATH, LIST_CHANNELS_PATH,
+	GET_FINANCIAL_INVENTORY_PATH, GET_FORWARDED_PAYMENT_DETAILS_PATH,
+	GET_FORWARDED_PAYMENT_TRACKING_MODE_PATH, GET_METRICS_PATH, GET_NODE_INFO_PATH,
+	GET_PAYMENT_DETAILS_PATH, GET_PERMISSIONS_PATH, GRAPH_GET_CHANNEL_PATH, GRAPH_GET_NODE_PATH,
+	GRAPH_LIST_CHANNELS_PATH, GRAPH_LIST_NODES_PATH, LIST_CHANNELS_PATH,
 	LIST_CHANNEL_FORWARDING_STATS_PATH, LIST_CHANNEL_PAIR_FORWARDING_STATS_PATH,
 	LIST_FORWARDED_PAYMENTS_PATH, LIST_MACAROONS_PATH, LIST_PAYMENTS_PATH, LIST_PEERS_PATH,
 	ONCHAIN_BUMP_FEE_PATH, ONCHAIN_RECEIVE_PATH, ONCHAIN_SEND_PATH, OPEN_CHANNEL_PATH,
@@ -80,6 +81,7 @@ use crate::api::error::{LdkServerError, LdkServerErrorCode};
 use crate::api::export_pathfinding_scores::handle_export_pathfinding_scores_request;
 use crate::api::get_balances::handle_get_balances_request;
 use crate::api::get_channel_forwarding_stats::handle_get_channel_forwarding_stats_request;
+use crate::api::get_financial_inventory::handle_get_financial_inventory_request;
 use crate::api::get_forwarded_payment_details::handle_get_forwarded_payment_details_request;
 use crate::api::get_forwarded_payment_tracking_mode::handle_get_forwarded_payment_tracking_mode_request;
 use crate::api::get_node_info::handle_get_node_info_request;
@@ -252,6 +254,10 @@ impl Service<Request<Incoming>> for NodeService {
 			match method.as_str() {
 				GET_NODE_INFO_PATH => {
 					handle_grpc_unary(context, body_bytes, handle_get_node_info_request).await
+				},
+				GET_FINANCIAL_INVENTORY_PATH => {
+					handle_grpc_unary(context, body_bytes, handle_get_financial_inventory_request)
+						.await
 				},
 				GET_BALANCES_PATH => {
 					handle_grpc_unary(context, body_bytes, handle_get_balances_request).await

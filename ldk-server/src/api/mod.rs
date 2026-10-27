@@ -41,6 +41,7 @@ pub(crate) mod error;
 pub(crate) mod export_pathfinding_scores;
 pub(crate) mod get_balances;
 pub(crate) mod get_channel_forwarding_stats;
+pub(crate) mod get_financial_inventory;
 pub(crate) mod get_forwarded_payment_details;
 pub(crate) mod get_forwarded_payment_tracking_mode;
 pub(crate) mod get_node_info;
