@@ -2190,3 +2190,74 @@ pub struct InventoryPayment {
 	#[prost(uint64, tag = "8")]
 	pub updated_at: u64,
 }
+/// Check whether a route exists that would pay a BOLT11 invoice, without paying it and without
+/// sending any HTLC.
+/// See more: <https://docs.rs/ldk-node/latest/ldk_node/payment/struct.Bolt11Payment.html#method.has_route>
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Bolt11FindRouteRequest {
+	/// An invoice for a payment within the Lightning Network.
+	#[prost(string, tag = "1")]
+	pub invoice: ::prost::alloc::string::String,
+	/// Set this field when checking a so-called "zero-amount" invoice, or to check a larger amount
+	/// than the invoice requires.
+	#[prost(uint64, optional, tag = "2")]
+	pub amount_msat: ::core::option::Option<u64>,
+	/// Configuration options for payment routing and pathfinding. The route must fit within the
+	/// routing fee and CLTV limits set here.
+	#[prost(message, optional, tag = "3")]
+	pub route_parameters: ::core::option::Option<super::types::RouteParametersConfig>,
+}
+/// The response for the `Bolt11FindRoute` RPC. On failure, a gRPC error status is returned.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Bolt11FindRouteResponse {
+	/// Whether a route within the given limits was found in the node's network graph, using the
+	/// invoice's route hints and the node's usable channels.
+	#[prost(bool, tag = "1")]
+	pub route_found: bool,
+	/// How many nodes the node's network graph holds. Zero means the graph has not been synced
+	/// yet, so a missing route says little.
+	#[prost(uint64, tag = "2")]
+	pub graph_node_count: u64,
+}
+/// Check whether a route exists that would pay a BOLT12 invoice previously fetched via
+/// `Bolt12FetchInvoice`, without paying it and without sending any HTLC. The invoice stays
+/// pending, to be paid with `Bolt12PayInvoice` or released with `AbandonBolt12Invoice`.
+/// See more: <https://docs.rs/ldk-node/latest/ldk_node/payment/struct.Bolt12Payment.html#method.has_route_for_bolt12_invoice>
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Bolt12FindRouteRequest {
+	/// The hex-encoded payment id from `Bolt12FetchInvoice` / `Bolt12InvoiceReceived`.
+	#[prost(string, tag = "1")]
+	pub payment_id: ::prost::alloc::string::String,
+	/// Configuration options for payment routing and pathfinding. The route must fit within the
+	/// routing fee and CLTV limits set here.
+	#[prost(message, optional, tag = "2")]
+	pub route_parameters: ::core::option::Option<super::types::RouteParametersConfig>,
+}
+/// The response for the `Bolt12FindRoute` RPC. On failure, a gRPC error status is returned.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Bolt12FindRouteResponse {
+	/// Whether a route within the given limits was found in the node's network graph, to the
+	/// invoice's blinded payment paths and using the node's usable channels.
+	#[prost(bool, tag = "1")]
+	pub route_found: bool,
+	/// How many nodes the node's network graph holds. Zero means the graph has not been synced
+	/// yet, so a missing route says little.
+	#[prost(uint64, tag = "2")]
+	pub graph_node_count: u64,
+}

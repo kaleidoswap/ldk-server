@@ -72,3 +72,5 @@ pub const LIST_MACAROONS_PATH: &str = "ListMacaroons";
 pub const REVOKE_MACAROON_PATH: &str = "RevokeMacaroon";
 pub const GET_PERMISSIONS_PATH: &str = "GetPermissions";
 pub const GET_FINANCIAL_INVENTORY_PATH: &str = "GetFinancialInventory";
+pub const BOLT11_FIND_ROUTE_PATH: &str = "Bolt11FindRoute";
+pub const BOLT12_FIND_ROUTE_PATH: &str = "Bolt12FindRoute";

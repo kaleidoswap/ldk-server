@@ -20,13 +20,13 @@ use ldk_node::lightning::ln::channelmanager::PaymentId;
 use ldk_node::Node;
 use ldk_server_grpc::endpoints::{
 	ABANDON_BOLT12_INVOICE_PATH, BOLT11_CLAIM_FOR_ID_PATH, BOLT11_FAIL_FOR_ID_PATH,
-	BOLT11_RECEIVE_FOR_HASH_PATH, BOLT11_RECEIVE_PATH,
+	BOLT11_FIND_ROUTE_PATH, BOLT11_RECEIVE_FOR_HASH_PATH, BOLT11_RECEIVE_PATH,
 	BOLT11_RECEIVE_VARIABLE_AMOUNT_VIA_JIT_CHANNEL_FOR_HASH_PATH,
 	BOLT11_RECEIVE_VARIABLE_AMOUNT_VIA_JIT_CHANNEL_PATH,
 	BOLT11_RECEIVE_VIA_JIT_CHANNEL_FOR_HASH_PATH, BOLT11_RECEIVE_VIA_JIT_CHANNEL_PATH,
 	BOLT11_SEND_PATH, BOLT11_SEND_UNDERPAYING_PATH, BOLT12_CREATE_PAYER_PROOF_PATH,
-	BOLT12_FETCH_INVOICE_PATH, BOLT12_PAY_INVOICE_PATH, BOLT12_RECEIVE_PATH,
-	BOLT12_RECEIVE_REFUND_PATH, BOLT12_SEND_PATH, BOLT12_SEND_REFUND_PATH,
+	BOLT12_FETCH_INVOICE_PATH, BOLT12_FIND_ROUTE_PATH, BOLT12_PAY_INVOICE_PATH,
+	BOLT12_RECEIVE_PATH, BOLT12_RECEIVE_REFUND_PATH, BOLT12_SEND_PATH, BOLT12_SEND_REFUND_PATH,
 	BUMP_CHANNEL_FUNDING_FEE_PATH, CLOSE_CHANNEL_PATH, CONNECT_PEER_PATH, CREATE_MACAROON_PATH,
 	DECODE_INVOICE_PATH, DECODE_OFFER_PATH, DISCONNECT_PEER_PATH, EXPORT_PATHFINDING_SCORES_PATH,
 	FORCE_CLOSE_CHANNEL_PATH, GET_BALANCES_PATH, GET_CHANNEL_FORWARDING_STATS_PATH,
@@ -55,6 +55,7 @@ use tokio::sync::{broadcast, mpsc};
 use crate::api::abandon_bolt12_invoice::handle_abandon_bolt12_invoice_request;
 use crate::api::bolt11_claim_for_id::handle_bolt11_claim_for_id_request;
 use crate::api::bolt11_fail_for_id::handle_bolt11_fail_for_id_request;
+use crate::api::bolt11_find_route::handle_bolt11_find_route_request;
 use crate::api::bolt11_receive::handle_bolt11_receive_request;
 use crate::api::bolt11_receive_for_hash::handle_bolt11_receive_for_hash_request;
 use crate::api::bolt11_receive_via_jit_channel::{
@@ -66,6 +67,7 @@ use crate::api::bolt11_receive_via_jit_channel::{
 use crate::api::bolt11_send::{handle_bolt11_send_request, handle_bolt11_send_underpaying_request};
 use crate::api::bolt12_create_payer_proof::handle_bolt12_create_payer_proof_request;
 use crate::api::bolt12_fetch_invoice::handle_bolt12_fetch_invoice_request;
+use crate::api::bolt12_find_route::handle_bolt12_find_route_request;
 use crate::api::bolt12_pay_invoice::handle_bolt12_pay_invoice_request;
 use crate::api::bolt12_receive::handle_bolt12_receive_request;
 use crate::api::bolt12_refund::{
@@ -258,6 +260,12 @@ impl Service<Request<Incoming>> for NodeService {
 				GET_FINANCIAL_INVENTORY_PATH => {
 					handle_grpc_unary(context, body_bytes, handle_get_financial_inventory_request)
 						.await
+				},
+				BOLT11_FIND_ROUTE_PATH => {
+					handle_grpc_unary(context, body_bytes, handle_bolt11_find_route_request).await
+				},
+				BOLT12_FIND_ROUTE_PATH => {
+					handle_grpc_unary(context, body_bytes, handle_bolt12_find_route_request).await
 				},
 				GET_BALANCES_PATH => {
 					handle_grpc_unary(context, body_bytes, handle_get_balances_request).await

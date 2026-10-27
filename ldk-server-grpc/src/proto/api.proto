@@ -1486,6 +1486,62 @@ message InventoryPayment {
   uint64 updated_at = 8;
 }
 
+// Check whether a route exists that would pay a BOLT11 invoice, without paying it and without
+// sending any HTLC.
+// See more: https://docs.rs/ldk-node/latest/ldk_node/payment/struct.Bolt11Payment.html#method.has_route
+message Bolt11FindRouteRequest {
+
+  // An invoice for a payment within the Lightning Network.
+  string invoice = 1;
+
+  // Set this field when checking a so-called "zero-amount" invoice, or to check a larger amount
+  // than the invoice requires.
+  optional uint64 amount_msat = 2;
+
+  // Configuration options for payment routing and pathfinding. The route must fit within the
+  // routing fee and CLTV limits set here.
+  optional types.RouteParametersConfig route_parameters = 3;
+
+}
+
+// The response for the `Bolt11FindRoute` RPC. On failure, a gRPC error status is returned.
+message Bolt11FindRouteResponse {
+
+  // Whether a route within the given limits was found in the node's network graph, using the
+  // invoice's route hints and the node's usable channels.
+  bool route_found = 1;
+
+  // How many nodes the node's network graph holds. Zero means the graph has not been synced
+  // yet, so a missing route says little.
+  uint64 graph_node_count = 2;
+}
+
+// Check whether a route exists that would pay a BOLT12 invoice previously fetched via
+// `Bolt12FetchInvoice`, without paying it and without sending any HTLC. The invoice stays
+// pending, to be paid with `Bolt12PayInvoice` or released with `AbandonBolt12Invoice`.
+// See more: https://docs.rs/ldk-node/latest/ldk_node/payment/struct.Bolt12Payment.html#method.has_route_for_bolt12_invoice
+message Bolt12FindRouteRequest {
+
+  // The hex-encoded payment id from `Bolt12FetchInvoice` / `Bolt12InvoiceReceived`.
+  string payment_id = 1;
+
+  // Configuration options for payment routing and pathfinding. The route must fit within the
+  // routing fee and CLTV limits set here.
+  optional types.RouteParametersConfig route_parameters = 2;
+}
+
+// The response for the `Bolt12FindRoute` RPC. On failure, a gRPC error status is returned.
+message Bolt12FindRouteResponse {
+
+  // Whether a route within the given limits was found in the node's network graph, to the
+  // invoice's blinded payment paths and using the node's usable channels.
+  bool route_found = 1;
+
+  // How many nodes the node's network graph holds. Zero means the graph has not been synced
+  // yet, so a missing route says little.
+  uint64 graph_node_count = 2;
+}
+
 service LightningNode {
   // Retrieve the latest node info.
   rpc GetNodeInfo(GetNodeInfoRequest) returns (GetNodeInfoResponse);
@@ -1613,4 +1669,9 @@ service LightningNode {
 
   // Read-only financial evidence: UTXOs, channels, HTLCs, monitors and sweeps.
   rpc GetFinancialInventory(GetFinancialInventoryRequest) returns (GetFinancialInventoryResponse);
+
+  // Check whether a route exists for a BOLT11 invoice, without paying it.
+  rpc Bolt11FindRoute(Bolt11FindRouteRequest) returns (Bolt11FindRouteResponse);
+  // Check whether a route exists for a fetched BOLT12 invoice, without paying it.
+  rpc Bolt12FindRoute(Bolt12FindRouteRequest) returns (Bolt12FindRouteResponse);
 }

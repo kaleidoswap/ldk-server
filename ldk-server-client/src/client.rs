@@ -14,8 +14,9 @@ use hyper::body::Body as _;
 use ldk_server_grpc::api::{
 	AbandonBolt12InvoiceRequest, AbandonBolt12InvoiceResponse, Bolt11ClaimForIdRequest,
 	Bolt11ClaimForIdResponse, Bolt11FailForIdRequest, Bolt11FailForIdResponse,
-	Bolt11ReceiveForHashRequest, Bolt11ReceiveForHashResponse, Bolt11ReceiveRequest,
-	Bolt11ReceiveResponse, Bolt11ReceiveVariableAmountViaJitChannelForHashRequest,
+	Bolt11FindRouteRequest, Bolt11FindRouteResponse, Bolt11ReceiveForHashRequest,
+	Bolt11ReceiveForHashResponse, Bolt11ReceiveRequest, Bolt11ReceiveResponse,
+	Bolt11ReceiveVariableAmountViaJitChannelForHashRequest,
 	Bolt11ReceiveVariableAmountViaJitChannelForHashResponse,
 	Bolt11ReceiveVariableAmountViaJitChannelRequest,
 	Bolt11ReceiveVariableAmountViaJitChannelResponse, Bolt11ReceiveViaJitChannelForHashRequest,
@@ -23,15 +24,15 @@ use ldk_server_grpc::api::{
 	Bolt11ReceiveViaJitChannelResponse, Bolt11SendRequest, Bolt11SendResponse,
 	Bolt11SendUnderpayingRequest, Bolt11SendUnderpayingResponse, Bolt12CreatePayerProofRequest,
 	Bolt12CreatePayerProofResponse, Bolt12FetchInvoiceRequest, Bolt12FetchInvoiceResponse,
-	Bolt12PayInvoiceRequest, Bolt12PayInvoiceResponse, Bolt12ReceiveRefundRequest,
-	Bolt12ReceiveRefundResponse, Bolt12ReceiveRequest, Bolt12ReceiveResponse,
-	Bolt12SendRefundRequest, Bolt12SendRefundResponse, Bolt12SendRequest, Bolt12SendResponse,
-	BumpChannelFundingFeeRequest, BumpChannelFundingFeeResponse, CloseChannelRequest,
-	CloseChannelResponse, ConnectPeerRequest, ConnectPeerResponse, CreateMacaroonRequest,
-	CreateMacaroonResponse, DecodeInvoiceRequest, DecodeInvoiceResponse, DecodeOfferRequest,
-	DecodeOfferResponse, DisconnectPeerRequest, DisconnectPeerResponse,
-	ExportPathfindingScoresRequest, ExportPathfindingScoresResponse, ForceCloseChannelRequest,
-	ForceCloseChannelResponse, GetBalancesRequest, GetBalancesResponse,
+	Bolt12FindRouteRequest, Bolt12FindRouteResponse, Bolt12PayInvoiceRequest,
+	Bolt12PayInvoiceResponse, Bolt12ReceiveRefundRequest, Bolt12ReceiveRefundResponse,
+	Bolt12ReceiveRequest, Bolt12ReceiveResponse, Bolt12SendRefundRequest, Bolt12SendRefundResponse,
+	Bolt12SendRequest, Bolt12SendResponse, BumpChannelFundingFeeRequest,
+	BumpChannelFundingFeeResponse, CloseChannelRequest, CloseChannelResponse, ConnectPeerRequest,
+	ConnectPeerResponse, CreateMacaroonRequest, CreateMacaroonResponse, DecodeInvoiceRequest,
+	DecodeInvoiceResponse, DecodeOfferRequest, DecodeOfferResponse, DisconnectPeerRequest,
+	DisconnectPeerResponse, ExportPathfindingScoresRequest, ExportPathfindingScoresResponse,
+	ForceCloseChannelRequest, ForceCloseChannelResponse, GetBalancesRequest, GetBalancesResponse,
 	GetChannelForwardingStatsRequest, GetChannelForwardingStatsResponse,
 	GetFinancialInventoryRequest, GetFinancialInventoryResponse, GetForwardedPaymentDetailsRequest,
 	GetForwardedPaymentDetailsResponse, GetForwardedPaymentTrackingModeRequest,
@@ -54,13 +55,13 @@ use ldk_server_grpc::api::{
 };
 use ldk_server_grpc::endpoints::{
 	ABANDON_BOLT12_INVOICE_PATH, BOLT11_CLAIM_FOR_ID_PATH, BOLT11_FAIL_FOR_ID_PATH,
-	BOLT11_RECEIVE_FOR_HASH_PATH, BOLT11_RECEIVE_PATH,
+	BOLT11_FIND_ROUTE_PATH, BOLT11_RECEIVE_FOR_HASH_PATH, BOLT11_RECEIVE_PATH,
 	BOLT11_RECEIVE_VARIABLE_AMOUNT_VIA_JIT_CHANNEL_FOR_HASH_PATH,
 	BOLT11_RECEIVE_VARIABLE_AMOUNT_VIA_JIT_CHANNEL_PATH,
 	BOLT11_RECEIVE_VIA_JIT_CHANNEL_FOR_HASH_PATH, BOLT11_RECEIVE_VIA_JIT_CHANNEL_PATH,
 	BOLT11_SEND_PATH, BOLT11_SEND_UNDERPAYING_PATH, BOLT12_CREATE_PAYER_PROOF_PATH,
-	BOLT12_FETCH_INVOICE_PATH, BOLT12_PAY_INVOICE_PATH, BOLT12_RECEIVE_PATH,
-	BOLT12_RECEIVE_REFUND_PATH, BOLT12_SEND_PATH, BOLT12_SEND_REFUND_PATH,
+	BOLT12_FETCH_INVOICE_PATH, BOLT12_FIND_ROUTE_PATH, BOLT12_PAY_INVOICE_PATH,
+	BOLT12_RECEIVE_PATH, BOLT12_RECEIVE_REFUND_PATH, BOLT12_SEND_PATH, BOLT12_SEND_REFUND_PATH,
 	BUMP_CHANNEL_FUNDING_FEE_PATH, CLOSE_CHANNEL_PATH, CONNECT_PEER_PATH, CREATE_MACAROON_PATH,
 	DECODE_INVOICE_PATH, DECODE_OFFER_PATH, DISCONNECT_PEER_PATH, EXPORT_PATHFINDING_SCORES_PATH,
 	FORCE_CLOSE_CHANNEL_PATH, GET_BALANCES_PATH, GET_CHANNEL_FORWARDING_STATS_PATH,
@@ -180,6 +181,21 @@ impl LdkServerClient {
 				format!("Failed to decode metrics response as string: {}", e),
 			)
 		})
+	}
+
+	/// Check whether a route exists for a BOLT11 invoice, without paying it.
+	pub async fn bolt11_find_route(
+		&self, request: Bolt11FindRouteRequest,
+	) -> Result<Bolt11FindRouteResponse, LdkServerError> {
+		self.grpc_unary(&request, BOLT11_FIND_ROUTE_PATH).await
+	}
+
+	/// Check whether a route exists for a BOLT12 invoice previously fetched via
+	/// [`Self::bolt12_fetch_invoice`], without paying it.
+	pub async fn bolt12_find_route(
+		&self, request: Bolt12FindRouteRequest,
+	) -> Result<Bolt12FindRouteResponse, LdkServerError> {
+		self.grpc_unary(&request, BOLT12_FIND_ROUTE_PATH).await
 	}
 
 	/// Retrieves read-only UTXO, channel, HTLC, monitor, sweep and payment evidence.
