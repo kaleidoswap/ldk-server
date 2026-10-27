@@ -10,3 +10,19 @@ lto = true
 
 [profile.dev]
 panic = "abort"
+
+# ldk-node is built against a rust-lightning fork with read-only accounting snapshots;
+# redirect every crate that names upstream rust-lightning to the same revision.
+[patch."https://github.com/lightningdevkit/rust-lightning"]
+lightning = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "07a689c5c7a6d4cfba735fae5f86e4506ec87221" }
+lightning-types = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "07a689c5c7a6d4cfba735fae5f86e4506ec87221" }
+lightning-invoice = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "07a689c5c7a6d4cfba735fae5f86e4506ec87221" }
+lightning-net-tokio = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "07a689c5c7a6d4cfba735fae5f86e4506ec87221" }
+lightning-persister = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "07a689c5c7a6d4cfba735fae5f86e4506ec87221" }
+lightning-background-processor = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "07a689c5c7a6d4cfba735fae5f86e4506ec87221" }
+lightning-rapid-gossip-sync = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "07a689c5c7a6d4cfba735fae5f86e4506ec87221" }
+lightning-block-sync = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "07a689c5c7a6d4cfba735fae5f86e4506ec87221" }
+lightning-transaction-sync = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "07a689c5c7a6d4cfba735fae5f86e4506ec87221" }
+lightning-liquidity = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "07a689c5c7a6d4cfba735fae5f86e4506ec87221" }
+lightning-macros = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "07a689c5c7a6d4cfba735fae5f86e4506ec87221" }
+lightning-dns-resolver = { git = "https://github.com/kaleidoswap/rust-lightning", rev = "07a689c5c7a6d4cfba735fae5f86e4506ec87221" }

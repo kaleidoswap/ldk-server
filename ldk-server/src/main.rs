@@ -671,6 +671,13 @@ fn main() {
 								error!("Failed to mark event as handled: {e}");
 							}
 						},
+						// Only emitted with manual BOLT12 invoice handling, which this daemon does not
+						// enable yet.
+						Event::Bolt12InvoiceReceived { .. } => {
+							if let Err(e) = event_node.event_handled() {
+								error!("Failed to mark event as handled: {e}");
+							}
+						},
 						Event::SpliceNegotiated {
 							channel_id,
 							user_channel_id,
