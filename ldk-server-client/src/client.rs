@@ -23,23 +23,23 @@ use ldk_server_grpc::api::{
 	Bolt11ReceiveVariableAmountViaJitChannelRequest,
 	Bolt11ReceiveVariableAmountViaJitChannelResponse, Bolt11ReceiveViaJitChannelRequest,
 	Bolt11ReceiveViaJitChannelResponse, Bolt11SendRequest, Bolt11SendResponse,
-	Bolt12FetchInvoiceRequest, Bolt12FetchInvoiceResponse, Bolt12PayInvoiceRequest,
-	Bolt12PayInvoiceResponse, Bolt12ReceiveRequest, Bolt12ReceiveResponse, Bolt12SendRequest,
-	Bolt12SendResponse, CloseChannelRequest, CloseChannelResponse, ConnectPeerRequest,
-	ConnectPeerResponse, DecodeInvoiceRequest, DecodeInvoiceResponse, DecodeOfferRequest,
-	DecodeOfferResponse, DisconnectPeerRequest, DisconnectPeerResponse,
-	ExportPathfindingScoresRequest, ExportPathfindingScoresResponse, ForceCloseChannelRequest,
-	ForceCloseChannelResponse, GetBalancesRequest, GetBalancesResponse,
-	GetFinancialInventoryRequest, GetFinancialInventoryResponse, GetNodeInfoRequest,
-	GetNodeInfoResponse, GetPaymentDetailsRequest, GetPaymentDetailsResponse,
-	GraphGetChannelRequest, GraphGetChannelResponse, GraphGetNodeRequest, GraphGetNodeResponse,
-	GraphListChannelsRequest, GraphListChannelsResponse, GraphListNodesRequest,
-	GraphListNodesResponse, ListChannelsRequest, ListChannelsResponse,
-	ListForwardedPaymentsRequest, ListForwardedPaymentsResponse, ListPaymentsRequest,
-	ListPaymentsResponse, ListPeersRequest, ListPeersResponse, OnchainReceiveRequest,
-	OnchainReceiveResponse, OnchainSendRequest, OnchainSendResponse, OpenChannelRequest,
-	OpenChannelResponse, SignMessageRequest, SignMessageResponse, SpliceInRequest,
-	SpliceInResponse, SpliceOutRequest, SpliceOutResponse, SpontaneousSendRequest,
+	Bolt12FetchInvoiceRequest, Bolt12FetchInvoiceResponse, Bolt12FindRouteRequest,
+	Bolt12FindRouteResponse, Bolt12PayInvoiceRequest, Bolt12PayInvoiceResponse,
+	Bolt12ReceiveRequest, Bolt12ReceiveResponse, Bolt12SendRequest, Bolt12SendResponse,
+	CloseChannelRequest, CloseChannelResponse, ConnectPeerRequest, ConnectPeerResponse,
+	DecodeInvoiceRequest, DecodeInvoiceResponse, DecodeOfferRequest, DecodeOfferResponse,
+	DisconnectPeerRequest, DisconnectPeerResponse, ExportPathfindingScoresRequest,
+	ExportPathfindingScoresResponse, ForceCloseChannelRequest, ForceCloseChannelResponse,
+	GetBalancesRequest, GetBalancesResponse, GetFinancialInventoryRequest,
+	GetFinancialInventoryResponse, GetNodeInfoRequest, GetNodeInfoResponse,
+	GetPaymentDetailsRequest, GetPaymentDetailsResponse, GraphGetChannelRequest,
+	GraphGetChannelResponse, GraphGetNodeRequest, GraphGetNodeResponse, GraphListChannelsRequest,
+	GraphListChannelsResponse, GraphListNodesRequest, GraphListNodesResponse, ListChannelsRequest,
+	ListChannelsResponse, ListForwardedPaymentsRequest, ListForwardedPaymentsResponse,
+	ListPaymentsRequest, ListPaymentsResponse, ListPeersRequest, ListPeersResponse,
+	OnchainReceiveRequest, OnchainReceiveResponse, OnchainSendRequest, OnchainSendResponse,
+	OpenChannelRequest, OpenChannelResponse, SignMessageRequest, SignMessageResponse,
+	SpliceInRequest, SpliceInResponse, SpliceOutRequest, SpliceOutResponse, SpontaneousSendRequest,
 	SpontaneousSendResponse, SubscribeEventsRequest, UnifiedSendRequest, UnifiedSendResponse,
 	UpdateChannelConfigRequest, UpdateChannelConfigResponse, VerifySignatureRequest,
 	VerifySignatureResponse,
@@ -48,9 +48,9 @@ use ldk_server_grpc::endpoints::{
 	ABANDON_BOLT12_INVOICE_PATH, BOLT11_CLAIM_FOR_HASH_PATH, BOLT11_FAIL_FOR_HASH_PATH,
 	BOLT11_FIND_ROUTE_PATH, BOLT11_RECEIVE_FOR_HASH_PATH, BOLT11_RECEIVE_PATH,
 	BOLT11_RECEIVE_VARIABLE_AMOUNT_VIA_JIT_CHANNEL_PATH, BOLT11_RECEIVE_VIA_JIT_CHANNEL_PATH,
-	BOLT11_SEND_PATH, BOLT12_FETCH_INVOICE_PATH, BOLT12_PAY_INVOICE_PATH, BOLT12_RECEIVE_PATH,
-	BOLT12_SEND_PATH, CLOSE_CHANNEL_PATH, CONNECT_PEER_PATH, DECODE_INVOICE_PATH,
-	DECODE_OFFER_PATH, DISCONNECT_PEER_PATH, EXPORT_PATHFINDING_SCORES_PATH,
+	BOLT11_SEND_PATH, BOLT12_FETCH_INVOICE_PATH, BOLT12_FIND_ROUTE_PATH, BOLT12_PAY_INVOICE_PATH,
+	BOLT12_RECEIVE_PATH, BOLT12_SEND_PATH, CLOSE_CHANNEL_PATH, CONNECT_PEER_PATH,
+	DECODE_INVOICE_PATH, DECODE_OFFER_PATH, DISCONNECT_PEER_PATH, EXPORT_PATHFINDING_SCORES_PATH,
 	FORCE_CLOSE_CHANNEL_PATH, GET_BALANCES_PATH, GET_FINANCIAL_INVENTORY_PATH, GET_METRICS_PATH,
 	GET_NODE_INFO_PATH, GET_PAYMENT_DETAILS_PATH, GRAPH_GET_CHANNEL_PATH, GRAPH_GET_NODE_PATH,
 	GRAPH_LIST_CHANNELS_PATH, GRAPH_LIST_NODES_PATH, GRPC_SERVICE_PREFIX, LIST_CHANNELS_PATH,
@@ -292,6 +292,14 @@ impl LdkServerClient {
 		&self, request: AbandonBolt12InvoiceRequest,
 	) -> Result<AbandonBolt12InvoiceResponse, LdkServerError> {
 		self.grpc_unary(&request, ABANDON_BOLT12_INVOICE_PATH).await
+	}
+
+	/// Check whether a route exists for a BOLT12 invoice previously fetched via
+	/// [`Self::bolt12_fetch_invoice`], without paying it.
+	pub async fn bolt12_find_route(
+		&self, request: Bolt12FindRouteRequest,
+	) -> Result<Bolt12FindRouteResponse, LdkServerError> {
+		self.grpc_unary(&request, BOLT12_FIND_ROUTE_PATH).await
 	}
 
 	/// Creates a new outbound channel.

@@ -26,6 +26,7 @@ pub(crate) mod bolt11_receive_for_hash;
 pub(crate) mod bolt11_receive_via_jit_channel;
 pub(crate) mod bolt11_send;
 pub(crate) mod bolt12_fetch_invoice;
+pub(crate) mod bolt12_find_route;
 pub(crate) mod bolt12_pay_invoice;
 pub(crate) mod bolt12_receive;
 pub(crate) mod bolt12_send;

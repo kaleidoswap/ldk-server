@@ -583,6 +583,40 @@ pub struct AbandonBolt12InvoiceRequest {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AbandonBolt12InvoiceResponse {}
+/// Check whether a route exists that would pay a BOLT12 invoice previously fetched via
+/// `Bolt12FetchInvoice`, without paying it and without sending any HTLC. The invoice stays
+/// pending, to be paid with `Bolt12PayInvoice` or released with `AbandonBolt12Invoice`.
+/// See more: <https://docs.rs/ldk-node/latest/ldk_node/payment/struct.Bolt12Payment.html#method.has_route_for_bolt12_invoice>
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Bolt12FindRouteRequest {
+	/// The hex-encoded payment id from `Bolt12FetchInvoice` / `Bolt12InvoiceReceived`.
+	#[prost(string, tag = "1")]
+	pub payment_id: ::prost::alloc::string::String,
+	/// Configuration options for payment routing and pathfinding. The route must fit within the
+	/// routing fee and CLTV limits set here.
+	#[prost(message, optional, tag = "2")]
+	pub route_parameters: ::core::option::Option<super::types::RouteParametersConfig>,
+}
+/// The response for the `Bolt12FindRoute` RPC. On failure, a gRPC error status is returned.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Bolt12FindRouteResponse {
+	/// Whether a route within the given limits was found in the node's network graph, to the
+	/// invoice's blinded payment paths and using the node's usable channels.
+	#[prost(bool, tag = "1")]
+	pub route_found: bool,
+	/// How many nodes the node's network graph holds. Zero means the graph has not been synced
+	/// yet, so a missing route says little.
+	#[prost(uint64, tag = "2")]
+	pub graph_node_count: u64,
+}
 /// Send a spontaneous payment, also known as "keysend", to a node.
 /// See more: <https://docs.rs/ldk-node/latest/ldk_node/payment/struct.SpontaneousPayment.html#method.send>
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

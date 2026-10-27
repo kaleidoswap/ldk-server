@@ -7,10 +7,10 @@
 // You may not use this file except in accordance with one or both of these
 // licenses.
 
-use std::collections::HashSet;
+use crate::bolt12_gate::AutoPayGate;
 use std::future::Future;
 use std::pin::Pin;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use http_body_util::{BodyExt, Limited};
 use hyper::body::Incoming;
@@ -24,9 +24,9 @@ use ldk_server_grpc::endpoints::{
 	ABANDON_BOLT12_INVOICE_PATH, BOLT11_CLAIM_FOR_HASH_PATH, BOLT11_FAIL_FOR_HASH_PATH,
 	BOLT11_FIND_ROUTE_PATH, BOLT11_RECEIVE_FOR_HASH_PATH, BOLT11_RECEIVE_PATH,
 	BOLT11_RECEIVE_VARIABLE_AMOUNT_VIA_JIT_CHANNEL_PATH, BOLT11_RECEIVE_VIA_JIT_CHANNEL_PATH,
-	BOLT11_SEND_PATH, BOLT12_FETCH_INVOICE_PATH, BOLT12_PAY_INVOICE_PATH, BOLT12_RECEIVE_PATH,
-	BOLT12_SEND_PATH, CLOSE_CHANNEL_PATH, CONNECT_PEER_PATH, DECODE_INVOICE_PATH,
-	DECODE_OFFER_PATH, DISCONNECT_PEER_PATH, EXPORT_PATHFINDING_SCORES_PATH,
+	BOLT11_SEND_PATH, BOLT12_FETCH_INVOICE_PATH, BOLT12_FIND_ROUTE_PATH, BOLT12_PAY_INVOICE_PATH,
+	BOLT12_RECEIVE_PATH, BOLT12_SEND_PATH, CLOSE_CHANNEL_PATH, CONNECT_PEER_PATH,
+	DECODE_INVOICE_PATH, DECODE_OFFER_PATH, DISCONNECT_PEER_PATH, EXPORT_PATHFINDING_SCORES_PATH,
 	FORCE_CLOSE_CHANNEL_PATH, GET_BALANCES_PATH, GET_FINANCIAL_INVENTORY_PATH, GET_METRICS_PATH,
 	GET_NODE_INFO_PATH, GET_PAYMENT_DETAILS_PATH, GRAPH_GET_CHANNEL_PATH, GRAPH_GET_NODE_PATH,
 	GRAPH_LIST_CHANNELS_PATH, GRAPH_LIST_NODES_PATH, LIST_CHANNELS_PATH,
@@ -57,6 +57,7 @@ use crate::api::bolt11_receive_via_jit_channel::{
 };
 use crate::api::bolt11_send::handle_bolt11_send_request;
 use crate::api::bolt12_fetch_invoice::handle_bolt12_fetch_invoice_request;
+use crate::api::bolt12_find_route::handle_bolt12_find_route_request;
 use crate::api::bolt12_pay_invoice::handle_bolt12_pay_invoice_request;
 use crate::api::bolt12_receive::handle_bolt12_receive_request;
 use crate::api::bolt12_send::handle_bolt12_send_request;
@@ -115,9 +116,9 @@ impl NodeService {
 		metrics: Option<Arc<Metrics>>, metrics_auth_header: Option<String>,
 		event_sender: broadcast::Sender<EventEnvelope>,
 		shutdown_rx: tokio::sync::watch::Receiver<bool>,
-		manual_bolt12_payments: Arc<Mutex<HashSet<PaymentId>>>,
+		bolt12_auto_pay: Arc<AutoPayGate<PaymentId>>,
 	) -> Self {
-		let context = Arc::new(Context { node, paginated_kv_store, manual_bolt12_payments });
+		let context = Arc::new(Context { node, paginated_kv_store, bolt12_auto_pay });
 		Self { context, api_key, metrics, metrics_auth_header, event_sender, shutdown_rx }
 	}
 }
@@ -176,11 +177,8 @@ fn validate_auth<B>(req: &Request<B>, api_key: &str, body: &[u8]) -> Result<(), 
 pub(crate) struct Context {
 	pub(crate) node: Arc<Node>,
 	pub(crate) paginated_kv_store: Arc<dyn PaginatedKVStore>,
-	/// Payment ids of BOLT12 invoices fetched via `Bolt12FetchInvoice` and awaiting
-	/// an explicit `Bolt12PayInvoice` / `AbandonBolt12Invoice`. The event loop checks
-	/// this set when a `Bolt12InvoiceReceived` event fires: ids in it are surfaced to
-	/// clients (manual handling); everything else is auto-paid (preserving `Bolt12Send`).
-	pub(crate) manual_bolt12_payments: Arc<Mutex<HashSet<PaymentId>>>,
+	/// Single-use authorization for explicit Bolt12Send calls. Fetches never enter.
+	pub(crate) bolt12_auto_pay: Arc<AutoPayGate<PaymentId>>,
 }
 
 impl Service<Request<Incoming>> for NodeService {
@@ -347,6 +345,9 @@ impl Service<Request<Incoming>> for NodeService {
 				BOLT12_FETCH_INVOICE_PATH => {
 					handle_grpc_unary(context, body_bytes, handle_bolt12_fetch_invoice_request)
 						.await
+				},
+				BOLT12_FIND_ROUTE_PATH => {
+					handle_grpc_unary(context, body_bytes, handle_bolt12_find_route_request).await
 				},
 				BOLT12_PAY_INVOICE_PATH => {
 					handle_grpc_unary(context, body_bytes, handle_bolt12_pay_invoice_request).await
