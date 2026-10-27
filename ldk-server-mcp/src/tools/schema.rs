@@ -506,6 +506,20 @@ pub fn bolt12_send_schema() -> Value {
 	})
 }
 
+pub fn bolt12_find_route_schema() -> Value {
+	json!({
+		"type": "object",
+		"properties": {
+			"payment_id": {
+				"type": "string",
+				"description": "The hex-encoded payment ID returned by bolt12_fetch_invoice"
+			},
+			"route_parameters": route_parameters_config_schema()
+		},
+		"required": ["payment_id"]
+	})
+}
+
 pub fn bolt12_fetch_invoice_schema() -> Value {
 	json!({
 		"type": "object",
