@@ -11,10 +11,12 @@ use std::io::{BufRead, BufReader, Write};
 
 use serde_json::{json, Value};
 
-const NUM_TOOLS: usize = 54;
+const NUM_TOOLS: usize = 60;
 const EXPECTED_TOOLS: [&str; NUM_TOOLS] = [
+	"abandon_bolt12_invoice",
 	"bolt11_claim_for_id",
 	"bolt11_fail_for_id",
+	"bolt11_find_route",
 	"bolt11_receive",
 	"bolt11_receive_for_hash",
 	"bolt11_receive_variable_amount_via_jit_channel",
@@ -24,6 +26,9 @@ const EXPECTED_TOOLS: [&str; NUM_TOOLS] = [
 	"bolt11_send",
 	"bolt11_send_underpaying",
 	"bolt12_create_payer_proof",
+	"bolt12_fetch_invoice",
+	"bolt12_find_route",
+	"bolt12_pay_invoice",
 	"bolt12_receive",
 	"bolt12_receive_refund",
 	"bolt12_send",
@@ -38,6 +43,10 @@ const EXPECTED_TOOLS: [&str; NUM_TOOLS] = [
 	"export_pathfinding_scores",
 	"force_close_channel",
 	"get_balances",
+	"get_channel_forwarding_stats",
+	"get_financial_inventory",
+	"get_forwarded_payment_details",
+	"get_forwarded_payment_tracking_mode",
 	"get_node_info",
 	"get_payment_details",
 	"get_permissions",
@@ -45,14 +54,11 @@ const EXPECTED_TOOLS: [&str; NUM_TOOLS] = [
 	"graph_get_node",
 	"graph_list_channels",
 	"graph_list_nodes",
-	"list_macaroons",
-	"list_channels",
-	"get_forwarded_payment_details",
-	"get_forwarded_payment_tracking_mode",
-	"get_channel_forwarding_stats",
 	"list_channel_forwarding_stats",
 	"list_channel_pair_forwarding_stats",
+	"list_channels",
 	"list_forwarded_payments",
+	"list_macaroons",
 	"list_payments",
 	"list_peers",
 	"onchain_bump_fee",

@@ -10,18 +10,20 @@
 use hex_conservative::DisplayHex;
 use ldk_server_client::client::LdkServerClient;
 use ldk_server_client::ldk_server_grpc::api::{
-	Bolt11ClaimForIdRequest, Bolt11FailForIdRequest, Bolt11ReceiveForHashRequest,
-	Bolt11ReceiveRequest, Bolt11ReceiveVariableAmountViaJitChannelForHashRequest,
+	AbandonBolt12InvoiceRequest, Bolt11ClaimForIdRequest, Bolt11FailForIdRequest,
+	Bolt11FindRouteRequest, Bolt11ReceiveForHashRequest, Bolt11ReceiveRequest,
+	Bolt11ReceiveVariableAmountViaJitChannelForHashRequest,
 	Bolt11ReceiveVariableAmountViaJitChannelRequest, Bolt11ReceiveViaJitChannelForHashRequest,
 	Bolt11ReceiveViaJitChannelRequest, Bolt11SendRequest, Bolt11SendUnderpayingRequest,
-	Bolt12CreatePayerProofRequest, Bolt12ReceiveRefundRequest, Bolt12ReceiveRequest,
+	Bolt12CreatePayerProofRequest, Bolt12FetchInvoiceRequest, Bolt12FindRouteRequest,
+	Bolt12PayInvoiceRequest, Bolt12ReceiveRefundRequest, Bolt12ReceiveRequest,
 	Bolt12SendRefundRequest, Bolt12SendRequest, BumpChannelFundingFeeRequest, CloseChannelRequest,
 	ConnectPeerRequest, CreateMacaroonRequest, DecodeInvoiceRequest, DecodeOfferRequest,
 	DisconnectPeerRequest, ExportPathfindingScoresRequest, ForceCloseChannelRequest,
-	GetBalancesRequest, GetChannelForwardingStatsRequest, GetForwardedPaymentDetailsRequest,
-	GetForwardedPaymentTrackingModeRequest, GetNodeInfoRequest, GetPaymentDetailsRequest,
-	GetPermissionsRequest, GraphGetChannelRequest, GraphGetNodeRequest, GraphListChannelsRequest,
-	GraphListNodesRequest, ListChannelForwardingStatsRequest,
+	GetBalancesRequest, GetChannelForwardingStatsRequest, GetFinancialInventoryRequest,
+	GetForwardedPaymentDetailsRequest, GetForwardedPaymentTrackingModeRequest, GetNodeInfoRequest,
+	GetPaymentDetailsRequest, GetPermissionsRequest, GraphGetChannelRequest, GraphGetNodeRequest,
+	GraphListChannelsRequest, GraphListNodesRequest, ListChannelForwardingStatsRequest,
 	ListChannelPairForwardingStatsRequest, ListChannelsRequest, ListForwardedPaymentsRequest,
 	ListMacaroonsRequest, ListPaymentsRequest, ListPeersRequest, OnchainBumpFeeRequest,
 	OnchainReceiveRequest, OnchainSendRequest, OpenChannelRequest, RevokeMacaroonRequest,
@@ -316,6 +318,65 @@ pub async fn handle_bolt12_send(client: &LdkServerClient, args: Value) -> Result
 			&mut request.route_parameters
 		})?;
 	let response = client.bolt12_send(request).await.map_err(McpError::from)?;
+	serialize_response(response)
+}
+
+pub async fn handle_bolt12_fetch_invoice(
+	client: &LdkServerClient, args: Value,
+) -> Result<Value, McpError> {
+	let request: Bolt12FetchInvoiceRequest =
+		parse_request_with_route_parameters(args, |request: &mut Bolt12FetchInvoiceRequest| {
+			&mut request.route_parameters
+		})?;
+	let response = client.bolt12_fetch_invoice(request).await.map_err(McpError::from)?;
+	serialize_response(response)
+}
+
+pub async fn handle_bolt12_pay_invoice(
+	client: &LdkServerClient, args: Value,
+) -> Result<Value, McpError> {
+	let request: Bolt12PayInvoiceRequest = parse_request(args)?;
+	let response = client.bolt12_pay_invoice(request).await.map_err(McpError::from)?;
+	serialize_response(response)
+}
+
+pub async fn handle_abandon_bolt12_invoice(
+	client: &LdkServerClient, args: Value,
+) -> Result<Value, McpError> {
+	let request: AbandonBolt12InvoiceRequest = parse_request(args)?;
+	let response = client.abandon_bolt12_invoice(request).await.map_err(McpError::from)?;
+	serialize_response(response)
+}
+
+pub async fn handle_bolt11_find_route(
+	client: &LdkServerClient, args: Value,
+) -> Result<Value, McpError> {
+	let request: Bolt11FindRouteRequest =
+		parse_request_with_route_parameters(args, |request: &mut Bolt11FindRouteRequest| {
+			&mut request.route_parameters
+		})?;
+	let response = client.bolt11_find_route(request).await.map_err(McpError::from)?;
+	serialize_response(response)
+}
+
+pub async fn handle_bolt12_find_route(
+	client: &LdkServerClient, args: Value,
+) -> Result<Value, McpError> {
+	let request: Bolt12FindRouteRequest =
+		parse_request_with_route_parameters(args, |request: &mut Bolt12FindRouteRequest| {
+			&mut request.route_parameters
+		})?;
+	let response = client.bolt12_find_route(request).await.map_err(McpError::from)?;
+	serialize_response(response)
+}
+
+pub async fn handle_get_financial_inventory(
+	client: &LdkServerClient, _args: Value,
+) -> Result<Value, McpError> {
+	let response = client
+		.get_financial_inventory(GetFinancialInventoryRequest {})
+		.await
+		.map_err(McpError::from)?;
 	serialize_response(response)
 }
 
