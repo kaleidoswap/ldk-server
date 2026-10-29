@@ -13,7 +13,7 @@ keywords = ["bitcoin", "lightning", "ldk", "server"]
 categories = ["cryptography::cryptocurrencies"]
 
 [dependencies]
-ldk-node = { git = "https://github.com/kaleidoswap/ldk-node", rev = "15df5d023dd89e5ecbdd55a9afdf60861549862f", features = ["storage-postgres"] }
+ldk-node = { git = "https://github.com/kaleidoswap/ldk-node", rev = "5e3c087993e395f76911c4f2518f7a051dbdbf31", features = ["storage-postgres"] }
 serde = { version = "1.0.203", default-features = false, features = ["derive"] }
 hyper = { version = "1", default-features = false, features = ["server", "http2"] }
 http-body-util = { version = "0.1", default-features = false }
