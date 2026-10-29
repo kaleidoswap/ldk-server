@@ -11,19 +11,12 @@ use std::sync::Arc;
 
 use ldk_server_grpc::api::*;
 
-use crate::api::error::{LdkServerError, LdkServerErrorCode};
+use crate::api::error::LdkServerError;
 use crate::service::Context;
 pub(crate) async fn handle_get_financial_inventory_request(
 	context: Arc<Context>, _request: GetFinancialInventoryRequest,
 ) -> Result<GetFinancialInventoryResponse, LdkServerError> {
-	let inventory = tokio::task::spawn_blocking(move || context.node.financial_inventory())
-		.await
-		.map_err(|_| {
-		LdkServerError::new(
-			LdkServerErrorCode::InternalServerError,
-			"Financial inventory collection failed",
-		)
-	})?;
+	let inventory = context.node.financial_inventory_durable().await;
 	Ok(convert_financialinventory(inventory))
 }
 fn convert_inventorytip(v: ldk_node::inventory::InventoryTip) -> InventoryTip {
