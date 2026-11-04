@@ -402,6 +402,24 @@ pub fn bolt11_send_schema() -> Value {
 	})
 }
 
+pub fn bolt11_find_route_schema() -> Value {
+	json!({
+		"type": "object",
+		"properties": {
+			"invoice": {
+				"type": "string",
+				"description": "A BOLT11 invoice to check a route for"
+			},
+			"amount_msat": {
+				"type": "integer",
+				"description": "Optional amount in millisatoshis; set this for a variable-amount invoice, or to check a larger amount than the invoice requires"
+			},
+			"route_parameters": route_parameters_config_schema()
+		},
+		"required": ["invoice"]
+	})
+}
+
 pub fn bolt11_send_probes_schema() -> Value {
 	json!({
 		"type": "object",
