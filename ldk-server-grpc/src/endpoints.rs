@@ -25,6 +25,7 @@ pub const BOLT11_RECEIVE_VARIABLE_AMOUNT_VIA_JIT_CHANNEL_PATH: &str =
 pub const BOLT11_RECEIVE_VIA_JIT_CHANNEL_FOR_HASH_PATH: &str = "Bolt11ReceiveViaJitChannelForHash";
 pub const BOLT11_RECEIVE_VARIABLE_AMOUNT_VIA_JIT_CHANNEL_FOR_HASH_PATH: &str =
 	"Bolt11ReceiveVariableAmountViaJitChannelForHash";
+pub const BOLT11_FIND_ROUTE_PATH: &str = "Bolt11FindRoute";
 pub const BOLT11_SEND_PATH: &str = "Bolt11Send";
 pub const BOLT11_SEND_PROBES_PATH: &str = "Bolt11SendProbes";
 pub const BOLT11_SEND_UNDERPAYING_PATH: &str = "Bolt11SendUnderpaying";

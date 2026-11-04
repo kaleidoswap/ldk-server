@@ -187,6 +187,7 @@ total fee rate in sat/vB; omit it to use an automatic rate. The response contain
 |-------------------------|-------------------------------------------------------------------|
 | `Bolt11Receive`         | Create an invoice (fixed or variable amount) with automatic claim |
 | `Bolt11Send`            | Pay a BOLT11 invoice (with optional routing config)               |
+| `Bolt11FindRoute`       | Check whether a route exists for a BOLT11 invoice, sending nothing |
 | `Bolt11SendProbes`      | Send preflight probes for a BOLT11 invoice                        |
 | `Bolt11SendUnderpaying` | Send part of the amount for a fixed-amount BOLT11 invoice         |
 
