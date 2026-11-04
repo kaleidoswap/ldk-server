@@ -17,8 +17,9 @@ use hyper::service::Service;
 use hyper::{HeaderMap, Request, Response};
 use ldk_node::Node;
 use ldk_server_grpc::endpoints::{
-	BOLT11_CLAIM_FOR_ID_PATH, BOLT11_FAIL_FOR_ID_PATH, BOLT11_RECEIVE_FOR_HASH_PATH,
-	BOLT11_RECEIVE_PATH, BOLT11_RECEIVE_VARIABLE_AMOUNT_VIA_JIT_CHANNEL_FOR_HASH_PATH,
+	BOLT11_CLAIM_FOR_ID_PATH, BOLT11_FAIL_FOR_ID_PATH, BOLT11_FIND_ROUTE_PATH,
+	BOLT11_RECEIVE_FOR_HASH_PATH, BOLT11_RECEIVE_PATH,
+	BOLT11_RECEIVE_VARIABLE_AMOUNT_VIA_JIT_CHANNEL_FOR_HASH_PATH,
 	BOLT11_RECEIVE_VARIABLE_AMOUNT_VIA_JIT_CHANNEL_PATH,
 	BOLT11_RECEIVE_VIA_JIT_CHANNEL_FOR_HASH_PATH, BOLT11_RECEIVE_VIA_JIT_CHANNEL_PATH,
 	BOLT11_SEND_PATH, BOLT11_SEND_PROBES_PATH, BOLT11_SEND_UNDERPAYING_PATH,
@@ -50,6 +51,7 @@ use tokio::sync::{broadcast, mpsc};
 
 use crate::api::bolt11_claim_for_id::handle_bolt11_claim_for_id_request;
 use crate::api::bolt11_fail_for_id::handle_bolt11_fail_for_id_request;
+use crate::api::bolt11_find_route::handle_bolt11_find_route_request;
 use crate::api::bolt11_receive::handle_bolt11_receive_request;
 use crate::api::bolt11_receive_for_hash::handle_bolt11_receive_for_hash_request;
 use crate::api::bolt11_receive_via_jit_channel::{
@@ -306,6 +308,9 @@ impl Service<Request<Incoming>> for NodeService {
 				},
 				BOLT11_SEND_PATH => {
 					handle_grpc_unary(context, body_bytes, handle_bolt11_send_request).await
+				},
+				BOLT11_FIND_ROUTE_PATH => {
+					handle_grpc_unary(context, body_bytes, handle_bolt11_find_route_request).await
 				},
 				BOLT11_SEND_PROBES_PATH => {
 					handle_grpc_unary(context, body_bytes, handle_bolt11_send_probes_request).await

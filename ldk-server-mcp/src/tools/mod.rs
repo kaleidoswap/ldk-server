@@ -17,8 +17,9 @@ use std::pin::Pin;
 use ldk_server_client::client::LdkServerClient;
 use ldk_server_client::ldk_server_grpc::api::MacaroonInfo;
 use ldk_server_client::ldk_server_grpc::endpoints::{
-	BOLT11_CLAIM_FOR_ID_PATH, BOLT11_FAIL_FOR_ID_PATH, BOLT11_RECEIVE_FOR_HASH_PATH,
-	BOLT11_RECEIVE_PATH, BOLT11_RECEIVE_VARIABLE_AMOUNT_VIA_JIT_CHANNEL_FOR_HASH_PATH,
+	BOLT11_CLAIM_FOR_ID_PATH, BOLT11_FAIL_FOR_ID_PATH, BOLT11_FIND_ROUTE_PATH,
+	BOLT11_RECEIVE_FOR_HASH_PATH, BOLT11_RECEIVE_PATH,
+	BOLT11_RECEIVE_VARIABLE_AMOUNT_VIA_JIT_CHANNEL_FOR_HASH_PATH,
 	BOLT11_RECEIVE_VARIABLE_AMOUNT_VIA_JIT_CHANNEL_PATH,
 	BOLT11_RECEIVE_VIA_JIT_CHANNEL_FOR_HASH_PATH, BOLT11_RECEIVE_VIA_JIT_CHANNEL_PATH,
 	BOLT11_SEND_PATH, BOLT11_SEND_PROBES_PATH, BOLT11_SEND_UNDERPAYING_PATH,
@@ -261,6 +262,13 @@ pub fn build_tool_registry() -> ToolRegistry {
 			"Pay a BOLT11 Lightning invoice",
 			schema::bolt11_send_schema,
 			|client, args| Box::pin(handlers::handle_bolt11_send(client, args)),
+		),
+		tool_spec(
+			"bolt11_find_route",
+			BOLT11_FIND_ROUTE_PATH,
+			"Check whether a route exists to pay a BOLT11 invoice, without sending any HTLC",
+			schema::bolt11_find_route_schema,
+			|client, args| Box::pin(handlers::handle_bolt11_find_route(client, args)),
 		),
 		tool_spec(
 			"bolt11_send_probes",

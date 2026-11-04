@@ -13,9 +13,9 @@ use std::pin::Pin;
 use hyper::body::Body as _;
 use ldk_server_grpc::api::{
 	Bolt11ClaimForIdRequest, Bolt11ClaimForIdResponse, Bolt11FailForIdRequest,
-	Bolt11FailForIdResponse, Bolt11ReceiveForHashRequest, Bolt11ReceiveForHashResponse,
-	Bolt11ReceiveRequest, Bolt11ReceiveResponse,
-	Bolt11ReceiveVariableAmountViaJitChannelForHashRequest,
+	Bolt11FailForIdResponse, Bolt11FindRouteRequest, Bolt11FindRouteResponse,
+	Bolt11ReceiveForHashRequest, Bolt11ReceiveForHashResponse, Bolt11ReceiveRequest,
+	Bolt11ReceiveResponse, Bolt11ReceiveVariableAmountViaJitChannelForHashRequest,
 	Bolt11ReceiveVariableAmountViaJitChannelForHashResponse,
 	Bolt11ReceiveVariableAmountViaJitChannelRequest,
 	Bolt11ReceiveVariableAmountViaJitChannelResponse, Bolt11ReceiveViaJitChannelForHashRequest,
@@ -52,8 +52,9 @@ use ldk_server_grpc::api::{
 	VerifySignatureResponse,
 };
 use ldk_server_grpc::endpoints::{
-	BOLT11_CLAIM_FOR_ID_PATH, BOLT11_FAIL_FOR_ID_PATH, BOLT11_RECEIVE_FOR_HASH_PATH,
-	BOLT11_RECEIVE_PATH, BOLT11_RECEIVE_VARIABLE_AMOUNT_VIA_JIT_CHANNEL_FOR_HASH_PATH,
+	BOLT11_CLAIM_FOR_ID_PATH, BOLT11_FAIL_FOR_ID_PATH, BOLT11_FIND_ROUTE_PATH,
+	BOLT11_RECEIVE_FOR_HASH_PATH, BOLT11_RECEIVE_PATH,
+	BOLT11_RECEIVE_VARIABLE_AMOUNT_VIA_JIT_CHANNEL_FOR_HASH_PATH,
 	BOLT11_RECEIVE_VARIABLE_AMOUNT_VIA_JIT_CHANNEL_PATH,
 	BOLT11_RECEIVE_VIA_JIT_CHANNEL_FOR_HASH_PATH, BOLT11_RECEIVE_VIA_JIT_CHANNEL_PATH,
 	BOLT11_SEND_PATH, BOLT11_SEND_PROBES_PATH, BOLT11_SEND_UNDERPAYING_PATH,
@@ -271,6 +272,13 @@ impl LdkServerClient {
 		&self, request: Bolt11SendRequest,
 	) -> Result<Bolt11SendResponse, LdkServerError> {
 		self.grpc_unary(&request, BOLT11_SEND_PATH).await
+	}
+
+	/// Check whether a route exists to pay a BOLT11 invoice, without sending any HTLC.
+	pub async fn bolt11_find_route(
+		&self, request: Bolt11FindRouteRequest,
+	) -> Result<Bolt11FindRouteResponse, LdkServerError> {
+		self.grpc_unary(&request, BOLT11_FIND_ROUTE_PATH).await
 	}
 
 	/// Send temporary preflight HTLC probes for a BOLT11 invoice to train the scorer.

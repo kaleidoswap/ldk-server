@@ -10,8 +10,9 @@
 use hex_conservative::DisplayHex;
 use ldk_server_client::client::LdkServerClient;
 use ldk_server_client::ldk_server_grpc::api::{
-	Bolt11ClaimForIdRequest, Bolt11FailForIdRequest, Bolt11ReceiveForHashRequest,
-	Bolt11ReceiveRequest, Bolt11ReceiveVariableAmountViaJitChannelForHashRequest,
+	Bolt11ClaimForIdRequest, Bolt11FailForIdRequest, Bolt11FindRouteRequest,
+	Bolt11ReceiveForHashRequest, Bolt11ReceiveRequest,
+	Bolt11ReceiveVariableAmountViaJitChannelForHashRequest,
 	Bolt11ReceiveVariableAmountViaJitChannelRequest, Bolt11ReceiveViaJitChannelForHashRequest,
 	Bolt11ReceiveViaJitChannelRequest, Bolt11SendProbesRequest, Bolt11SendRequest,
 	Bolt11SendUnderpayingRequest, Bolt12CreatePayerProofRequest, Bolt12ReceiveRefundRequest,
@@ -288,6 +289,17 @@ pub async fn handle_bolt11_send(client: &LdkServerClient, args: Value) -> Result
 			&mut request.route_parameters
 		})?;
 	let response = client.bolt11_send(request).await.map_err(McpError::from)?;
+	serialize_response(response)
+}
+
+pub async fn handle_bolt11_find_route(
+	client: &LdkServerClient, args: Value,
+) -> Result<Value, McpError> {
+	let request: Bolt11FindRouteRequest =
+		parse_request_with_route_parameters(args, |request: &mut Bolt11FindRouteRequest| {
+			&mut request.route_parameters
+		})?;
+	let response = client.bolt11_find_route(request).await.map_err(McpError::from)?;
 	serialize_response(response)
 }
 

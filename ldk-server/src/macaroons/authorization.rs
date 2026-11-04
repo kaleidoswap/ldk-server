@@ -38,6 +38,7 @@ mod tests {
 			("Bolt11ReceiveVariableAmountViaJitChannel", Some("invoices:create")),
 			("Bolt11ReceiveViaJitChannelForHash", Some("invoices:create")),
 			("Bolt11ReceiveVariableAmountViaJitChannelForHash", Some("invoices:create")),
+			("Bolt11FindRoute", Some("payments:send")),
 			("Bolt11Send", Some("payments:send")),
 			("Bolt11SendProbes", Some("payments:send")),
 			("Bolt11SendUnderpaying", Some("payments:send")),

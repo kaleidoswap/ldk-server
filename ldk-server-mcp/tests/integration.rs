@@ -11,10 +11,11 @@ use std::io::{BufRead, BufReader, Write};
 
 use serde_json::{json, Value};
 
-const NUM_TOOLS: usize = 56;
+const NUM_TOOLS: usize = 57;
 const EXPECTED_TOOLS: [&str; NUM_TOOLS] = [
 	"bolt11_claim_for_id",
 	"bolt11_fail_for_id",
+	"bolt11_find_route",
 	"bolt11_receive",
 	"bolt11_receive_for_hash",
 	"bolt11_receive_variable_amount_via_jit_channel",
