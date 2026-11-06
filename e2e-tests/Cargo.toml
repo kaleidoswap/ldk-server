@@ -21,4 +21,4 @@ ldk-server-client = { path = "../ldk-server-client" }
 ldk-server-grpc = { path = "../ldk-server-grpc", features = ["serde"] }
 serde_json = "1.0"
 hex-conservative = { version = "0.2", features = ["std"] }
-ldk-node = { git = "https://github.com/kaleidoswap/ldk-node", rev = "cf8bf6eb51e2b39ff2d40db65361638fda74180e" }
+ldk-node = { git = "https://github.com/kaleidoswap/ldk-node", rev = "d190ed84c169e562ba1d0dd3abd19e0b20785aec" }
