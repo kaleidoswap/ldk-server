@@ -176,6 +176,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "bdk_coin_select"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "43064fa3dd1d3a8b24079cfcb5ede6b785857edc782277f17a1736511ccc1916"
+
+[[package]]
 name = "bdk_core"
 version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -209,12 +215,25 @@ dependencies = [
 ]
 
 [[package]]
-name = "bdk_wallet"
-version = "3.1.0"
+name = "bdk_tx"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1284fb23acc3e3022673712b55f4d5ce7e38aadc2c49bbef830dc3935f0a3289"
+checksum = "40406c9952f15ed30893826bd83b7d67b6bf11d56574c1efc3db3a5d70cdfcea"
+dependencies = [
+ "bdk_coin_select",
+ "miniscript",
+ "rand 0.8.8",
+ "rand_core 0.6.4",
+]
+
+[[package]]
+name = "bdk_wallet"
+version = "3.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "163ec032e0a5a795ded2a7e47fc40a887c75743326483147e4465159c53abdc4"
 dependencies = [
  "bdk_chain",
+ "bdk_tx",
  "bip39 2.2.2",
  "bitcoin",
  "miniscript",
@@ -369,7 +388,7 @@ dependencies = [
  "serde_json",
  "tokio",
  "tokio-rustls",
- "webpki-roots 1.0.10",
+ "webpki-roots",
 ]
 
 [[package]]
@@ -620,9 +639,9 @@ checksum = "48c757948c5ede0e46177b7add2e67155f70e33c07fea8284df6576da70b3719"
 
 [[package]]
 name = "electrum-client"
-version = "0.25.0"
+version = "0.25.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1970c5d7bd9de6d4041cbfc3e46faa3e85fe7efcea2b0eb06750d3ae1ef577b7"
+checksum = "19701e9c0ce6e3337eb31bd307b854e762c6ffa2ccd19167ebd3588ec53e4447"
 dependencies = [
  "bitcoin",
  "byteorder",
@@ -631,7 +650,7 @@ dependencies = [
  "rustls",
  "serde",
  "serde_json",
- "webpki-roots 0.25.4",
+ "webpki-roots",
  "winapi",
 ]
 
@@ -648,7 +667,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -1147,7 +1166,7 @@ dependencies = [
  "tokio",
  "tokio-rustls",
  "tower-service",
- "webpki-roots 1.0.10",
+ "webpki-roots",
 ]
 
 [[package]]
@@ -1180,7 +1199,7 @@ dependencies = [
  "libc",
  "percent-encoding",
  "pin-project-lite",
- "socket2 0.5.10",
+ "socket2 0.6.1",
  "tokio",
  "tower-service",
  "tracing",
@@ -1392,7 +1411,7 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 [[package]]
 name = "ldk-node"
 version = "0.8.0+git"
-source = "git+https://github.com/kaleidoswap/ldk-node?rev=1c6b91f96dfa9473a3a5c1cb9fb3b7b8730fba69#1c6b91f96dfa9473a3a5c1cb9fb3b7b8730fba69"
+source = "git+https://github.com/kaleidoswap/ldk-node?rev=3c60f57af77573800f6ae521d5b69ba1255c15c3#3c60f57af77573800f6ae521d5b69ba1255c15c3"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -1774,9 +1793,9 @@ checksum = "6877bb514081ee2a7ff5ef9de3281f14a4dd4bceac4c09388074a6b5df8a139a"
 
 [[package]]
 name = "miniscript"
-version = "12.3.5"
+version = "12.3.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "487906208f38448e186e3deb02f2b8ef046a9078b0de00bdb28bf4fb9b76951c"
+checksum = "06a2f93613888f7d069f00cb94f83dab82f01f78a50c9935814a2547fa30ceba"
 dependencies = [
  "bech32",
  "bitcoin",
@@ -2130,7 +2149,7 @@ dependencies = [
  "quinn-udp",
  "rustc-hash",
  "rustls",
- "socket2 0.5.10",
+ "socket2 0.6.1",
  "thiserror",
  "tokio",
  "tracing",
@@ -2168,9 +2187,9 @@ dependencies = [
  "cfg_aliases",
  "libc",
  "once_cell",
- "socket2 0.5.10",
+ "socket2 0.6.1",
  "tracing",
- "windows-sys 0.59.0",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -2324,7 +2343,7 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
- "webpki-roots 1.0.10",
+ "webpki-roots",
 ]
 
 [[package]]
@@ -2384,7 +2403,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.11.0",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -2711,7 +2730,7 @@ dependencies = [
  "getrandom 0.3.4",
  "once_cell",
  "rustix 1.1.2",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -3240,12 +3259,6 @@ dependencies = [
  "js-sys",
  "wasm-bindgen",
 ]
-
-[[package]]
-name = "webpki-roots"
-version = "0.25.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f20c57d8d7db6d3b86154206ae5d8fba62dd39573114de97c2cb0578251f8e1"
 
 [[package]]
 name = "webpki-roots"
