@@ -103,7 +103,7 @@ RPCs with no permission mapping return `UNIMPLEMENTED`, even for admin tokens.
 | `payments:claim` | Claim or fail held BOLT11 payments |
 | `payments:send` | Send BOLT11, BOLT12, spontaneous and unified payments and probes; splice out |
 | `channels:read` | List channels |
-| `channels:manage` | Open, configure, cooperatively close, splice funds into channels, or bump pending splice fees |
+| `channels:manage` | Open, configure, cooperatively close, splice funds into channels, or bump pending splice fees. Opening a channel can push funds to the counterparty, so this permission can move funds out of the node |
 | `channels:force_close` | Force-close channels |
 | `peers:read` | List peers |
 | `peers:manage` | Connect or disconnect peers |
@@ -383,6 +383,21 @@ When `PaymentSuccessful` arrives, retain its `payment_id`, `payment_preimage`, a
 optional invoice fields that the proof discloses. Payment history APIs cannot recover all the
 inputs required to create a proof if this event is missed. Save these values before processing
 other events.
+
+With the CLI, `pay --wait` subscribes before sending and prints the full `PaymentSuccessful`
+event on success. Save its JSON output to retain the proof inputs:
+
+```bash
+ldk-server-cli pay --wait "$OFFER" > payment-receipt.json
+ldk-server-cli bolt12-create-payer-proof \
+  "$(jq -r '.payment_id' payment-receipt.json)" \
+  "$(jq -r '.payment_preimage' payment-receipt.json)" \
+  "$(jq -r '.bolt12_invoice' payment-receipt.json)" \
+  --include-offer-description --include-invoice-amount
+```
+
+Run proof creation against the same node that made the payment. The receipt file is saved by
+shell redirection; the CLI does not automatically store it.
 
 The `bolt12_invoice` field is absent for static-invoice payments. These asynchronous payments
 cannot produce payer proofs.

@@ -1524,6 +1524,7 @@ dependencies = [
  "prost",
  "prost-build",
  "serde",
+ "serde_json",
  "tokio",
  "tokio-stream",
  "tonic",

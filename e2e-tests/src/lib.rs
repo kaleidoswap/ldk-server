@@ -255,6 +255,12 @@ impl TestConfigBuilder {
 		self
 	}
 
+	/// Set the gRPC service address.
+	pub fn grpc_service_address(mut self, address: &str) -> Self {
+		self.grpc_service_address = address.to_string();
+		self
+	}
+
 	/// Set the node alias, or `None` to omit it entirely.
 	pub fn alias(mut self, alias: Option<&str>) -> Self {
 		self.alias = alias.map(str::to_string);
@@ -596,7 +602,7 @@ pub fn start_expect_failure(
 }
 /// Allocate distinct ports outside the default Linux/macOS ephemeral ranges.
 /// Allocate each port only once per test process, so stopped servers can restart.
-fn reserve_port() -> TcpListener {
+pub fn reserve_port() -> TcpListener {
 	static NEXT_PORT: AtomicU32 = AtomicU32::new(10_000);
 	loop {
 		let port = NEXT_PORT.fetch_add(1, Ordering::Relaxed);
@@ -749,10 +755,11 @@ impl Drop for McpHandle {
 	}
 }
 
-/// Run a CLI command against the given server handle and return raw stdout as a string.
-pub fn run_cli_raw(handle: &LdkServerHandle, args: &[&str]) -> String {
+/// Run a CLI command against the given server handle and return its output, whatever the exit
+/// status.
+pub fn run_cli_output(handle: &LdkServerHandle, args: &[&str]) -> std::process::Output {
 	let cli_path = cli_binary_path();
-	let output = Command::new(&cli_path)
+	Command::new(&cli_path)
 		.arg("--base-url")
 		.arg(handle.base_url())
 		.arg("--macaroon")
@@ -761,7 +768,12 @@ pub fn run_cli_raw(handle: &LdkServerHandle, args: &[&str]) -> String {
 		.arg(handle.tls_cert_path.to_str().unwrap())
 		.args(args)
 		.output()
-		.unwrap_or_else(|e| panic!("Failed to run CLI at {:?}: {}", cli_path, e));
+		.unwrap_or_else(|e| panic!("Failed to run CLI at {:?}: {}", cli_path, e))
+}
+
+/// Run a CLI command against the given server handle and return raw stdout as a string.
+pub fn run_cli_raw(handle: &LdkServerHandle, args: &[&str]) -> String {
+	let output = run_cli_output(handle, args);
 
 	if !output.status.success() {
 		let stderr = String::from_utf8_lossy(&output.stderr);
