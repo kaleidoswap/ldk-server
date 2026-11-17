@@ -210,6 +210,16 @@ You must configure **exactly one** of the following sections:
 - **`[esplora]`** - Esplora HTTP API. Convenient for quick testing with a public block
   explorer (e.g., mempool.space), but not recommended for production use.
 
+The `[electrum]` and `[esplora]` sections also take optional background sync intervals, in
+seconds; each runs in its own task, and unset ones keep LDK Node's defaults (80, 30 and 600):
+
+- `onchain_wallet_sync_interval_secs` - how often the on-chain (BDK) wallet syncs.
+- `lightning_wallet_sync_interval_secs` - how often channel monitors and the output sweeper
+  check for confirmations. Keep this short: it is what notices channel funding and closes.
+- `fee_rate_cache_update_interval_secs` - how often fee rate estimates are refreshed.
+
+LDK Node enforces a minimum of 10 seconds for each.
+
 > **Warning:** When using Electrum or Esplora, LDK cannot verify Lightning gossip messages
 > against the blockchain. This means a malicious peer could flood your node with fake channel
 > announcements, consuming memory and disk. If your node is publicly reachable, use bitcoind.

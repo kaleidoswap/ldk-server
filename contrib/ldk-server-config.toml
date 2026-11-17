@@ -90,6 +90,10 @@ server_url = "ssl://electrum.blockstream.info:50002"  # Electrum endpoint
 # Esplora settings
 [esplora]
 server_url = "https://mempool.space/api"      # Esplora endpoint
+# Optional background sync intervals in seconds (also accepted under [electrum]):
+# onchain_wallet_sync_interval_secs = 80
+# lightning_wallet_sync_interval_secs = 30
+# fee_rate_cache_update_interval_secs = 600
 
 # LSPS Client Support
 # Repeat this section to register several LSPs. Supported protocols are discovered per
