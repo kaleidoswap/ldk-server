@@ -17,8 +17,8 @@ use clap::Parser;
 use ldk_node::bitcoin::secp256k1::PublicKey;
 use ldk_node::bitcoin::Network;
 use ldk_node::config::{
-	AnchorChannelsConfig, AsyncPaymentsRole, ForwardedPaymentTrackingMode, HRNResolverConfig,
-	HumanReadableNamesConfig,
+	AnchorChannelsConfig, AsyncPaymentsRole, BackgroundSyncConfig, ForwardedPaymentTrackingMode,
+	HRNResolverConfig, HumanReadableNamesConfig,
 };
 use ldk_node::lightning::ln::msgs::SocketAddress;
 use ldk_node::lightning::routing::gossip::NodeAlias;
@@ -132,11 +132,39 @@ pub enum ChainSource {
 	Electrum {
 		server_url: String,
 		force_wallet_full_scan: bool,
+		sync_intervals: WalletSyncIntervals,
 	},
 	Esplora {
 		server_url: String,
 		force_wallet_full_scan: bool,
+		sync_intervals: WalletSyncIntervals,
 	},
+}
+
+/// Background sync intervals of a transaction-based chain source, in seconds. Unset intervals
+/// keep LDK Node's defaults.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct WalletSyncIntervals {
+	pub onchain_wallet_sync_interval_secs: Option<u64>,
+	pub lightning_wallet_sync_interval_secs: Option<u64>,
+	pub fee_rate_cache_update_interval_secs: Option<u64>,
+}
+
+impl WalletSyncIntervals {
+	pub fn background_sync_config(&self) -> BackgroundSyncConfig {
+		let defaults = BackgroundSyncConfig::default();
+		BackgroundSyncConfig {
+			onchain_wallet_sync_interval_secs: self
+				.onchain_wallet_sync_interval_secs
+				.unwrap_or(defaults.onchain_wallet_sync_interval_secs),
+			lightning_wallet_sync_interval_secs: self
+				.lightning_wallet_sync_interval_secs
+				.unwrap_or(defaults.lightning_wallet_sync_interval_secs),
+			fee_rate_cache_update_interval_secs: self
+				.fee_rate_cache_update_interval_secs
+				.unwrap_or(defaults.fee_rate_cache_update_interval_secs),
+		}
+	}
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -157,6 +185,7 @@ struct ConfigBuilder {
 	ldk_node_postgres: Option<PostgresStorageConfig>,
 	electrum_url: Option<String>,
 	esplora_url: Option<String>,
+	sync_intervals: WalletSyncIntervals,
 	bitcoind_rpc_address: Option<String>,
 	bitcoind_rpc_user: Option<String>,
 	bitcoind_rpc_password: Option<String>,
@@ -230,10 +259,20 @@ impl ConfigBuilder {
 
 		if let Some(electrum) = toml.electrum {
 			self.electrum_url = Some(electrum.server_url);
+			self.sync_intervals = WalletSyncIntervals {
+				onchain_wallet_sync_interval_secs: electrum.onchain_wallet_sync_interval_secs,
+				lightning_wallet_sync_interval_secs: electrum.lightning_wallet_sync_interval_secs,
+				fee_rate_cache_update_interval_secs: electrum.fee_rate_cache_update_interval_secs,
+			};
 		}
 
 		if let Some(esplora) = toml.esplora {
 			self.esplora_url = Some(esplora.server_url);
+			self.sync_intervals = WalletSyncIntervals {
+				onchain_wallet_sync_interval_secs: esplora.onchain_wallet_sync_interval_secs,
+				lightning_wallet_sync_interval_secs: esplora.lightning_wallet_sync_interval_secs,
+				fee_rate_cache_update_interval_secs: esplora.fee_rate_cache_update_interval_secs,
+			};
 		}
 
 		if let Some(log) = toml.log {
@@ -560,6 +599,7 @@ impl ConfigBuilder {
 			ChainSource::Electrum {
 				server_url: url,
 				force_wallet_full_scan: self.force_wallet_full_scan,
+				sync_intervals: self.sync_intervals,
 			}
 		} else if let Some(url) = self.esplora_url {
 			if self.rescan_from_height.is_some() {
@@ -571,6 +611,7 @@ impl ConfigBuilder {
 			ChainSource::Esplora {
 				server_url: url,
 				force_wallet_full_scan: self.force_wallet_full_scan,
+				sync_intervals: self.sync_intervals,
 			}
 		} else {
 			return Err(io::Error::new(
@@ -841,12 +882,18 @@ struct BitcoindConfig {
 #[serde(deny_unknown_fields)]
 struct ElectrumConfig {
 	server_url: String,
+	onchain_wallet_sync_interval_secs: Option<u64>,
+	lightning_wallet_sync_interval_secs: Option<u64>,
+	fee_rate_cache_update_interval_secs: Option<u64>,
 }
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 struct EsploraConfig {
 	server_url: String,
+	onchain_wallet_sync_interval_secs: Option<u64>,
+	lightning_wallet_sync_interval_secs: Option<u64>,
+	fee_rate_cache_update_interval_secs: Option<u64>,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -1871,7 +1918,7 @@ mod tests {
 		fs::write(storage_path.join(config_file_name), toml_config).unwrap();
 		let config = load_config(&args_config).unwrap();
 
-		let ChainSource::Electrum { server_url, force_wallet_full_scan } = config.chain_source
+		let ChainSource::Electrum { server_url, force_wallet_full_scan, .. } = config.chain_source
 		else {
 			panic!("unexpected chain source");
 		};
@@ -3668,6 +3715,68 @@ mod tests {
 			assert_eq!(err.kind(), io::ErrorKind::InvalidInput);
 			assert!(err.to_string().contains("--rescan-from-height"));
 		}
+	}
+
+	#[test]
+	fn test_wallet_sync_intervals_configure_electrum_and_esplora() {
+		for (config_file_name, chain_config) in [
+			(
+				"test_wallet_sync_intervals_electrum.toml",
+				r#"
+				[node]
+				network = "regtest"
+
+				[electrum]
+				server_url = "ssl://electrum.blockstream.info:50002"
+				onchain_wallet_sync_interval_secs = 120
+				lightning_wallet_sync_interval_secs = 15
+				"#,
+			),
+			(
+				"test_wallet_sync_intervals_esplora.toml",
+				r#"
+				[node]
+				network = "regtest"
+
+				[esplora]
+				server_url = "https://mempool.space/api"
+				onchain_wallet_sync_interval_secs = 120
+				lightning_wallet_sync_interval_secs = 15
+				"#,
+			),
+		] {
+			let storage_path = std::env::temp_dir();
+			let chain_config = format!("{}{}", chain_config, lsps2_service_config_for_feature());
+			fs::write(storage_path.join(config_file_name), chain_config).unwrap();
+			let mut args_config = empty_args_config();
+			args_config.config_file =
+				Some(storage_path.join(config_file_name).to_string_lossy().to_string());
+
+			let config = load_config(&args_config).unwrap();
+			let sync_intervals = match config.chain_source {
+				ChainSource::Electrum { sync_intervals, .. }
+				| ChainSource::Esplora { sync_intervals, .. } => sync_intervals,
+				_ => panic!("unexpected chain source"),
+			};
+			let defaults = BackgroundSyncConfig::default();
+			assert_eq!(
+				sync_intervals.background_sync_config(),
+				BackgroundSyncConfig {
+					onchain_wallet_sync_interval_secs: 120,
+					lightning_wallet_sync_interval_secs: 15,
+					fee_rate_cache_update_interval_secs: defaults
+						.fee_rate_cache_update_interval_secs,
+				}
+			);
+		}
+	}
+
+	#[test]
+	fn test_wallet_sync_intervals_default_to_ldk_node_defaults() {
+		assert_eq!(
+			WalletSyncIntervals::default().background_sync_config(),
+			BackgroundSyncConfig::default()
+		);
 	}
 
 	#[test]

@@ -206,19 +206,21 @@ fn main() {
 				);
 			},
 		},
-		ChainSource::Electrum { server_url, force_wallet_full_scan } => {
-			let sync_config = force_wallet_full_scan.then(|| ElectrumSyncConfig {
-				force_wallet_full_scan: true,
+		ChainSource::Electrum { server_url, force_wallet_full_scan, sync_intervals } => {
+			let sync_config = ElectrumSyncConfig {
+				force_wallet_full_scan,
+				background_sync_config: Some(sync_intervals.background_sync_config()),
 				..ElectrumSyncConfig::default()
-			});
-			builder.set_chain_source_electrum(server_url, sync_config);
+			};
+			builder.set_chain_source_electrum(server_url, Some(sync_config));
 		},
-		ChainSource::Esplora { server_url, force_wallet_full_scan } => {
-			let sync_config = force_wallet_full_scan.then(|| EsploraSyncConfig {
-				force_wallet_full_scan: true,
+		ChainSource::Esplora { server_url, force_wallet_full_scan, sync_intervals } => {
+			let sync_config = EsploraSyncConfig {
+				force_wallet_full_scan,
+				background_sync_config: Some(sync_intervals.background_sync_config()),
 				..EsploraSyncConfig::default()
-			});
-			builder.set_chain_source_esplora(server_url, sync_config);
+			};
+			builder.set_chain_source_esplora(server_url, Some(sync_config));
 		},
 	}
 
