@@ -101,7 +101,7 @@ RPCs with no permission mapping return `UNIMPLEMENTED`, even for admin tokens.
 | `invoices:create` | Create BOLT11/BOLT12 invoices and incoming refund requests |
 | `payments:read` | Read payments, forwarded payments, and forwarding statistics |
 | `payments:claim` | Claim or fail held BOLT11 payments |
-| `payments:send` | Send BOLT11, BOLT12, spontaneous and unified payments and probes; splice out |
+| `payments:send` | Send BOLT11, BOLT12, spontaneous and unified payments and probes; fetch, pay, or abandon a BOLT12 invoice; splice out |
 | `channels:read` | List channels |
 | `channels:manage` | Open, configure, cooperatively close, splice funds into channels, or bump pending splice fees. Opening a channel can push funds to the counterparty, so this permission can move funds out of the node |
 | `channels:force_close` | Force-close channels |

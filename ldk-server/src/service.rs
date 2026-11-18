@@ -7,6 +7,7 @@
 // You may not use this file except in accordance with one or both of these
 // licenses.
 
+use crate::bolt12_gate::AutoPayGate;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
@@ -15,22 +16,23 @@ use http_body_util::{BodyExt, Limited};
 use hyper::body::Incoming;
 use hyper::service::Service;
 use hyper::{HeaderMap, Request, Response};
+use ldk_node::lightning::ln::channelmanager::PaymentId;
 use ldk_node::Node;
 use ldk_server_grpc::endpoints::{
-	BOLT11_CLAIM_FOR_ID_PATH, BOLT11_FAIL_FOR_ID_PATH, BOLT11_FIND_ROUTE_PATH,
-	BOLT11_RECEIVE_FOR_HASH_PATH, BOLT11_RECEIVE_PATH,
+	ABANDON_BOLT12_INVOICE_PATH, BOLT11_CLAIM_FOR_ID_PATH, BOLT11_FAIL_FOR_ID_PATH,
+	BOLT11_FIND_ROUTE_PATH, BOLT11_RECEIVE_FOR_HASH_PATH, BOLT11_RECEIVE_PATH,
 	BOLT11_RECEIVE_VARIABLE_AMOUNT_VIA_JIT_CHANNEL_FOR_HASH_PATH,
 	BOLT11_RECEIVE_VARIABLE_AMOUNT_VIA_JIT_CHANNEL_PATH,
 	BOLT11_RECEIVE_VIA_JIT_CHANNEL_FOR_HASH_PATH, BOLT11_RECEIVE_VIA_JIT_CHANNEL_PATH,
 	BOLT11_SEND_PATH, BOLT11_SEND_PROBES_PATH, BOLT11_SEND_UNDERPAYING_PATH,
-	BOLT12_CREATE_PAYER_PROOF_PATH, BOLT12_RECEIVE_PATH, BOLT12_RECEIVE_REFUND_PATH,
-	BOLT12_SEND_PATH, BOLT12_SEND_REFUND_PATH, BUMP_CHANNEL_FUNDING_FEE_PATH, CLOSE_CHANNEL_PATH,
-	CONNECT_PEER_PATH, CREATE_MACAROON_PATH, DECODE_INVOICE_PATH, DECODE_OFFER_PATH,
-	DISCONNECT_PEER_PATH, EXPORT_PATHFINDING_SCORES_PATH, FORCE_CLOSE_CHANNEL_PATH,
-	GET_BALANCES_PATH, GET_CHANNEL_FORWARDING_STATS_PATH, GET_FORWARDED_PAYMENT_DETAILS_PATH,
-	GET_FORWARDED_PAYMENT_TRACKING_MODE_PATH, GET_METRICS_PATH, GET_NODE_INFO_PATH,
-	GET_PAYMENT_DETAILS_PATH, GET_PERMISSIONS_PATH, GRAPH_GET_CHANNEL_PATH, GRAPH_GET_NODE_PATH,
-	GRAPH_LIST_CHANNELS_PATH, GRAPH_LIST_NODES_PATH, LIST_CHANNELS_PATH,
+	BOLT12_CREATE_PAYER_PROOF_PATH, BOLT12_FETCH_INVOICE_PATH, BOLT12_PAY_INVOICE_PATH,
+	BOLT12_RECEIVE_PATH, BOLT12_RECEIVE_REFUND_PATH, BOLT12_SEND_PATH, BOLT12_SEND_REFUND_PATH,
+	BUMP_CHANNEL_FUNDING_FEE_PATH, CLOSE_CHANNEL_PATH, CONNECT_PEER_PATH, CREATE_MACAROON_PATH,
+	DECODE_INVOICE_PATH, DECODE_OFFER_PATH, DISCONNECT_PEER_PATH, EXPORT_PATHFINDING_SCORES_PATH,
+	FORCE_CLOSE_CHANNEL_PATH, GET_BALANCES_PATH, GET_CHANNEL_FORWARDING_STATS_PATH,
+	GET_FORWARDED_PAYMENT_DETAILS_PATH, GET_FORWARDED_PAYMENT_TRACKING_MODE_PATH, GET_METRICS_PATH,
+	GET_NODE_INFO_PATH, GET_PAYMENT_DETAILS_PATH, GET_PERMISSIONS_PATH, GRAPH_GET_CHANNEL_PATH,
+	GRAPH_GET_NODE_PATH, GRAPH_LIST_CHANNELS_PATH, GRAPH_LIST_NODES_PATH, LIST_CHANNELS_PATH,
 	LIST_CHANNEL_FORWARDING_STATS_PATH, LIST_CHANNEL_PAIR_FORWARDING_STATS_PATH,
 	LIST_FORWARDED_PAYMENTS_PATH, LIST_MACAROONS_PATH, LIST_PAYMENTS_PATH, LIST_PEERS_PATH,
 	ONCHAIN_BUMP_FEE_PATH, ONCHAIN_RECEIVE_PATH, ONCHAIN_SEND_PATH, OPEN_CHANNEL_PATH,
@@ -49,6 +51,7 @@ use ldk_server_grpc::grpc::{
 use prost::Message;
 use tokio::sync::{broadcast, mpsc};
 
+use crate::api::abandon_bolt12_invoice::handle_abandon_bolt12_invoice_request;
 use crate::api::bolt11_claim_for_id::handle_bolt11_claim_for_id_request;
 use crate::api::bolt11_fail_for_id::handle_bolt11_fail_for_id_request;
 use crate::api::bolt11_find_route::handle_bolt11_find_route_request;
@@ -62,6 +65,8 @@ use crate::api::bolt11_receive_via_jit_channel::{
 };
 use crate::api::bolt11_send::{handle_bolt11_send_request, handle_bolt11_send_underpaying_request};
 use crate::api::bolt12_create_payer_proof::handle_bolt12_create_payer_proof_request;
+use crate::api::bolt12_fetch_invoice::handle_bolt12_fetch_invoice_request;
+use crate::api::bolt12_pay_invoice::handle_bolt12_pay_invoice_request;
 use crate::api::bolt12_receive::handle_bolt12_receive_request;
 use crate::api::bolt12_refund::{
 	handle_bolt12_receive_refund_request, handle_bolt12_send_refund_request,
@@ -133,14 +138,17 @@ impl NodeService {
 		node: Arc<Node>, macaroon_store: Arc<MacaroonStore>, metrics: Option<Arc<Metrics>>,
 		metrics_auth_header: Option<String>, event_sender: broadcast::Sender<EventEnvelope>,
 		shutdown_rx: tokio::sync::watch::Receiver<bool>,
+		bolt12_auto_pay: Arc<AutoPayGate<PaymentId>>,
 	) -> Self {
-		let context = Arc::new(Context { node });
+		let context = Arc::new(Context { node, bolt12_auto_pay });
 		Self { context, macaroon_store, metrics, metrics_auth_header, event_sender, shutdown_rx }
 	}
 }
 
 pub(crate) struct Context {
 	pub(crate) node: Arc<Node>,
+	/// Single-use authorization for explicit Bolt12Send calls. Fetches never enter.
+	pub(crate) bolt12_auto_pay: Arc<AutoPayGate<PaymentId>>,
 }
 
 impl Service<Request<Incoming>> for NodeService {
@@ -334,6 +342,17 @@ impl Service<Request<Incoming>> for NodeService {
 				},
 				BOLT12_CREATE_PAYER_PROOF_PATH => {
 					handle_grpc_unary(context, body_bytes, handle_bolt12_create_payer_proof_request)
+						.await
+				},
+				BOLT12_FETCH_INVOICE_PATH => {
+					handle_grpc_unary(context, body_bytes, handle_bolt12_fetch_invoice_request)
+						.await
+				},
+				BOLT12_PAY_INVOICE_PATH => {
+					handle_grpc_unary(context, body_bytes, handle_bolt12_pay_invoice_request).await
+				},
+				ABANDON_BOLT12_INVOICE_PATH => {
+					handle_grpc_unary(context, body_bytes, handle_abandon_bolt12_invoice_request)
 						.await
 				},
 				OPEN_CHANNEL_PATH => {

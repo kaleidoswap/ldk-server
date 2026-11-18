@@ -506,6 +506,45 @@ pub fn bolt12_send_schema() -> Value {
 	})
 }
 
+pub fn bolt12_fetch_invoice_schema() -> Value {
+	json!({
+		"type": "object",
+		"properties": {
+			"offer": {
+				"type": "string",
+				"description": "A BOLT12 offer to request an invoice from"
+			},
+			"amount_msat": {
+				"type": "integer",
+				"description": "Amount in millisatoshis. Required when the offer has no amount"
+			},
+			"quantity": {
+				"type": "integer",
+				"description": "Number of items requested"
+			},
+			"payer_note": {
+				"type": "string",
+				"description": "Note to include for the payee. Reflected back in the invoice"
+			},
+			"route_parameters": route_parameters_config_schema()
+		},
+		"required": ["offer"]
+	})
+}
+
+pub fn bolt12_payment_id_schema() -> Value {
+	json!({
+		"type": "object",
+		"properties": {
+			"payment_id": {
+				"type": "string",
+				"description": "The hex-encoded payment ID returned by bolt12_fetch_invoice"
+			}
+		},
+		"required": ["payment_id"]
+	})
+}
+
 pub fn bolt12_send_refund_schema() -> Value {
 	json!({
 		"type": "object",

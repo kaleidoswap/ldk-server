@@ -8,10 +8,12 @@
 // licenses.
 
 mod api;
+mod bolt12_gate;
 mod macaroons;
 mod service;
 mod util;
 
+use crate::bolt12_gate::AutoPayGate;
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -29,6 +31,7 @@ use ldk_node::lightning::events::{ClosureReason, PaymentFailureReason};
 use ldk_node::lightning::ln::channelmanager::PaymentId;
 use ldk_node::lightning::ln::types::ChannelId;
 use ldk_node::lightning::util::ser::Writeable;
+use ldk_node::payment::{PaymentDirection, PaymentKind};
 use ldk_node::{Builder, CustomTlvRecord, Event, Node};
 use ldk_server_grpc::events;
 use ldk_server_grpc::events::{event_envelope, EventEnvelope};
@@ -164,6 +167,11 @@ fn main() {
 	// The server exposes receive-for-hash APIs, so unknown inbound BOLT11 HTLCs
 	// must emit PaymentClaimable instead of being failed back.
 	ldk_node_config.manually_handle_unknown_bolt11_payments = true;
+	// Manually handle BOLT12 invoices so the Bolt12FetchInvoice RPC can fetch an
+	// invoice for an offer (and learn its payment hash) without paying. The event
+	// loop auto-pays any invoice not registered as a manual fetch, which preserves
+	// the atomic Bolt12Send semantics.
+	ldk_node_config.manually_handle_bolt12_invoices = true;
 
 	let mut builder = Builder::from_config(ldk_node_config);
 	builder.set_log_facade_logger();
@@ -323,6 +331,8 @@ fn main() {
 
 	let (event_sender, _) = broadcast::channel::<EventEnvelope>(1024);
 	let (shutdown_tx, shutdown_rx) = tokio::sync::watch::channel(false);
+	// Only explicit Bolt12Send requests may auto-pay. Unknown events fail closed.
+	let bolt12_auto_pay = Arc::new(AutoPayGate::<PaymentId>::new());
 
 	// Set up everything that can fail locally before the node starts, so that a failure never
 	// leaves a running node behind, and handle signals from the start.
@@ -668,9 +678,37 @@ fn main() {
 								error!("Failed to mark event as handled: {e}");
 							}
 						},
-						// Only emitted with manual BOLT12 invoice handling, which this daemon does not
-						// enable yet.
-						Event::Bolt12InvoiceReceived { .. } => {
+						Event::Bolt12InvoiceReceived { payment_id, payment_hash, amount_msat } => {
+							// Bolt12Send authorizes its own payment id. Bolt12SendRefund cannot (the
+							// node keeps the refund's id), but only it creates an outbound refund
+							// record, so an invoice for one is a payment that was asked for.
+							let auto_pay = bolt12_auto_pay.take(&payment_id)
+								|| is_outbound_bolt12_refund(&event_node, &payment_id);
+							if !auto_pay {
+								// Fetched via Bolt12FetchInvoice: surface it (with the payment
+								// hash) so the client can bind the hash to another obligation
+								// before an explicit Bolt12PayInvoice / AbandonBolt12Invoice.
+								if let Err(e) = event_sender.send(EventEnvelope {
+									event: Some(event_envelope::Event::Bolt12InvoiceReceived(
+										events::Bolt12InvoiceReceived {
+											payment_id: payment_id.to_string(),
+											payment_hash: payment_hash.0.to_lower_hex_string(),
+											amount_msat,
+										},
+									)),
+								}) {
+									debug!("No event subscribers connected, skipping event: {e}");
+								}
+							} else {
+								// Explicitly authorized Bolt12Send: auto-pay the fetched invoice so
+								// the atomic send semantics hold under manual BOLT12 handling.
+								if let Err(e) = event_node
+									.bolt12_payment()
+									.send_payment_for_bolt12_invoice(payment_id)
+								{
+									error!("Failed to auto-pay BOLT12 invoice {payment_id}: {e}");
+								}
+							}
 							if let Err(e) = event_node.event_handled() {
 								error!("Failed to mark event as handled: {e}");
 							}
@@ -740,6 +778,7 @@ fn main() {
 								metrics_auth_header.clone(),
 								event_sender.clone(),
 								shutdown_rx.clone(),
+								Arc::clone(&bolt12_auto_pay),
 							);
 							let acceptor = tls_acceptor.clone();
 							runtime.spawn(async move {
@@ -1077,6 +1116,14 @@ fn build_payment_claimable_proto(
 		claim_deadline,
 		claimable_amount_msat,
 	}
+}
+
+fn is_outbound_bolt12_refund(node: &Node, payment_id: &PaymentId) -> bool {
+	matches!(
+		node.payment(payment_id),
+		Ok(Some(p)) if p.direction == PaymentDirection::Outbound
+			&& matches!(p.kind, PaymentKind::Bolt12Refund { .. })
+	)
 }
 
 #[cfg(test)]
