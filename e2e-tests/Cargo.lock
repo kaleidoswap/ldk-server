@@ -1243,7 +1243,7 @@ checksum = "20870f649af7073d53e38067b2a84312175d56ea15217e1b15bc83506ec50afb"
 [[package]]
 name = "ldk-node"
 version = "0.8.0+git"
-source = "git+https://github.com/kaleidoswap/ldk-node?rev=525444cdccdddffda556e2f064cfec315f84b608#525444cdccdddffda556e2f064cfec315f84b608"
+source = "git+https://github.com/kaleidoswap/ldk-node?rev=5efa734a20e5f6db11e53c42b4ecdd91e88fbfc5#5efa734a20e5f6db11e53c42b4ecdd91e88fbfc5"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
