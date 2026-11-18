@@ -25,15 +25,28 @@ use crate::api::error::LdkServerErrorCode::InvalidRequestError;
 use crate::service::Context;
 use crate::util::proto_adapter::proto_to_bolt11_description;
 
+// ldk-node takes the LSP fee limit from the node configuration, not per invoice. Refuse a
+// per-request limit rather than issue an invoice that would not honour it.
+fn reject_per_request_fee_limit(limit: Option<u64>) -> Result<(), LdkServerError> {
+	if limit.is_some() {
+		return Err(LdkServerError::new(
+			InvalidRequestError,
+			"Per-request LSP fee limits are not supported; the node-wide limit applies."
+				.to_string(),
+		));
+	}
+	Ok(())
+}
+
 pub(crate) async fn handle_bolt11_receive_via_jit_channel_request(
 	context: Arc<Context>, request: Bolt11ReceiveViaJitChannelRequest,
 ) -> Result<Bolt11ReceiveViaJitChannelResponse, LdkServerError> {
 	let description = proto_to_bolt11_description(request.description)?;
+	reject_per_request_fee_limit(request.max_total_lsp_fee_limit_msat)?;
 	let invoice = context.node.bolt11_payment().receive_via_jit_channel(
 		request.amount_msat,
 		&description,
 		request.expiry_secs,
-		request.max_total_lsp_fee_limit_msat,
 	)?;
 
 	Ok(Bolt11ReceiveViaJitChannelResponse { invoice: invoice.to_string() })
@@ -43,11 +56,11 @@ pub(crate) async fn handle_bolt11_receive_variable_amount_via_jit_channel_reques
 	context: Arc<Context>, request: Bolt11ReceiveVariableAmountViaJitChannelRequest,
 ) -> Result<Bolt11ReceiveVariableAmountViaJitChannelResponse, LdkServerError> {
 	let description = proto_to_bolt11_description(request.description)?;
-	let invoice = context.node.bolt11_payment().receive_variable_amount_via_jit_channel(
-		&description,
-		request.expiry_secs,
-		request.max_proportional_lsp_fee_limit_ppm_msat,
-	)?;
+	reject_per_request_fee_limit(request.max_proportional_lsp_fee_limit_ppm_msat)?;
+	let invoice = context
+		.node
+		.bolt11_payment()
+		.receive_variable_amount_via_jit_channel(&description, request.expiry_secs)?;
 
 	Ok(Bolt11ReceiveVariableAmountViaJitChannelResponse { invoice: invoice.to_string() })
 }
@@ -56,6 +69,7 @@ pub(crate) async fn handle_bolt11_receive_via_jit_channel_for_hash_request(
 	context: Arc<Context>, request: Bolt11ReceiveViaJitChannelForHashRequest,
 ) -> Result<Bolt11ReceiveViaJitChannelForHashResponse, LdkServerError> {
 	let description = proto_to_bolt11_description(request.description)?;
+	reject_per_request_fee_limit(request.max_total_lsp_fee_limit_msat)?;
 	let hash_bytes = <[u8; 32]>::from_hex(&request.payment_hash).map_err(|_| {
 		LdkServerError::new(
 			InvalidRequestError,
@@ -67,7 +81,6 @@ pub(crate) async fn handle_bolt11_receive_via_jit_channel_for_hash_request(
 		request.amount_msat,
 		&description,
 		request.expiry_secs,
-		request.max_total_lsp_fee_limit_msat,
 		payment_hash,
 	)?;
 
@@ -78,6 +91,7 @@ pub(crate) async fn handle_bolt11_receive_variable_amount_via_jit_channel_for_ha
 	context: Arc<Context>, request: Bolt11ReceiveVariableAmountViaJitChannelForHashRequest,
 ) -> Result<Bolt11ReceiveVariableAmountViaJitChannelForHashResponse, LdkServerError> {
 	let description = proto_to_bolt11_description(request.description)?;
+	reject_per_request_fee_limit(request.max_proportional_lsp_fee_limit_ppm_msat)?;
 	let hash_bytes = <[u8; 32]>::from_hex(&request.payment_hash).map_err(|_| {
 		LdkServerError::new(
 			InvalidRequestError,
@@ -88,7 +102,6 @@ pub(crate) async fn handle_bolt11_receive_variable_amount_via_jit_channel_for_ha
 	let invoice = context.node.bolt11_payment().receive_variable_amount_via_jit_channel_for_hash(
 		&description,
 		request.expiry_secs,
-		request.max_proportional_lsp_fee_limit_ppm_msat,
 		payment_hash,
 	)?;
 	Ok(Bolt11ReceiveVariableAmountViaJitChannelForHashResponse { invoice: invoice.to_string() })

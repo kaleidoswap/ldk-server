@@ -1966,10 +1966,8 @@ async fn forwarded_payment_event_and_history(tracking_mode: &str) {
 	let description = ldk_node::lightning_invoice::Bolt11InvoiceDescription::Direct(
 		ldk_node::lightning_invoice::Description::new("test jit".to_string()).unwrap(),
 	);
-	let jit_invoice = node_c
-		.bolt11_payment()
-		.receive_via_jit_channel(100_000_000, &description, 3600, None)
-		.unwrap();
+	let jit_invoice =
+		node_c.bolt11_payment().receive_via_jit_channel(100_000_000, &description, 3600).unwrap();
 
 	let sent_at = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
 	// A pays the JIT invoice (routes through B)

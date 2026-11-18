@@ -32,10 +32,10 @@ pub(crate) async fn handle_splice_in_request(
 
 	match require_amount(request.amount)? {
 		Amount::SpliceAmountSats(amount_sats) => {
-			context.node.splice_in(&user_channel_id, counterparty_node_id, amount_sats)?
+			context.node.splice_in(&user_channel_id, counterparty_node_id, amount_sats, None)?
 		},
 		Amount::AllFunds(_) => {
-			context.node.splice_in_with_all(&user_channel_id, counterparty_node_id)?
+			context.node.splice_in_with_all(&user_channel_id, counterparty_node_id, None)?
 		},
 	}
 
@@ -68,6 +68,7 @@ pub(crate) async fn handle_splice_out_request(
 		counterparty_node_id,
 		&address,
 		request.splice_amount_sats,
+		None,
 	)?;
 
 	Ok(SpliceOutResponse { address: address.to_string() })
@@ -78,7 +79,7 @@ pub(crate) async fn handle_bump_channel_funding_fee_request(
 ) -> Result<BumpChannelFundingFeeResponse, LdkServerError> {
 	let user_channel_id = parse_user_channel_id(&request.user_channel_id)?;
 	let counterparty_node_id = parse_counterparty_node_id(&request.counterparty_node_id)?;
-	context.node.bump_channel_funding_fee(&user_channel_id, counterparty_node_id)?;
+	context.node.bump_channel_funding_fee(&user_channel_id, counterparty_node_id, None)?;
 	Ok(BumpChannelFundingFeeResponse {})
 }
 

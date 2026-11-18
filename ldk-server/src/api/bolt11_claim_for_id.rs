@@ -30,8 +30,18 @@ pub(crate) async fn handle_bolt11_claim_for_id_request(
 	})?;
 	let preimage = PaymentPreimage(preimage_bytes);
 
-	let claimable_amount_msat = request.claimable_amount_msat.unwrap_or(u64::MAX);
-	context.node.bolt11_payment().claim_for_id(payment_id, claimable_amount_msat, preimage)?;
+	// ldk-node leaves checking the claimable amount to the caller. Keep honouring the amount a
+	// client states: refuse when the node holds more than that client expects to claim.
+	if let Some(expected_msat) = request.claimable_amount_msat {
+		let received_msat = context.node.payment(&payment_id)?.and_then(|p| p.amount_msat);
+		if received_msat.is_some_and(|received_msat| received_msat > expected_msat) {
+			return Err(LdkServerError::new(
+				InvalidRequestError,
+				"The claimable amount is less than the amount received.".to_string(),
+			));
+		}
+	}
+	context.node.bolt11_payment().claim_for_id(payment_id, preimage)?;
 
 	Ok(Bolt11ClaimForIdResponse {})
 }

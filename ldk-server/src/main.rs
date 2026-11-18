@@ -697,6 +697,8 @@ fn main() {
 							channel_id,
 							user_channel_id,
 							counterparty_node_id,
+							reason: _,
+							parameters: _,
 						} => {
 							info!(
 								"SPLICE_NEGOTIATION_FAILED: {} from counterparty {}",

@@ -280,17 +280,23 @@ pub(crate) fn payment_kind_to_proto(
 				})),
 			}
 		},
-		PaymentKind::Bolt12Offer { hash, preimage, secret, offer_id, payer_note, quantity } => {
-			ldk_server_grpc::types::PaymentKind {
-				kind: Some(Bolt12Offer(ldk_server_grpc::types::Bolt12Offer {
-					hash: hash.map(|h| h.to_string()),
-					preimage: preimage.map(|p| p.to_string()),
-					secret: secret.map(|s| Bytes::copy_from_slice(&s.0)),
-					offer_id: offer_id.0.to_lower_hex_string(),
-					payer_note: payer_note.map(|s| s.to_string()),
-					quantity,
-				})),
-			}
+		PaymentKind::Bolt12Offer {
+			hash,
+			preimage,
+			secret,
+			offer_id,
+			payer_note,
+			quantity,
+			counterparty_skimmed_fee_msat: _,
+		} => ldk_server_grpc::types::PaymentKind {
+			kind: Some(Bolt12Offer(ldk_server_grpc::types::Bolt12Offer {
+				hash: hash.map(|h| h.to_string()),
+				preimage: preimage.map(|p| p.to_string()),
+				secret: secret.map(|s| Bytes::copy_from_slice(&s.0)),
+				offer_id: offer_id.0.to_lower_hex_string(),
+				payer_note: payer_note.map(|s| s.to_string()),
+				quantity,
+			})),
 		},
 		PaymentKind::Bolt12Refund { hash, preimage, secret, payer_note, quantity } => {
 			ldk_server_grpc::types::PaymentKind {
