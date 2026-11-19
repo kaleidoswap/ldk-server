@@ -222,11 +222,19 @@ fn main() {
 			};
 			builder.set_chain_source_electrum(server_url, Some(sync_config));
 		},
-		ChainSource::Esplora { server_url, force_wallet_full_scan, sync_intervals } => {
+		ChainSource::Esplora {
+			server_url,
+			force_wallet_full_scan,
+			sync_intervals,
+			wallet_sync_parallel_requests,
+		} => {
+			let defaults = EsploraSyncConfig::default();
 			let sync_config = EsploraSyncConfig {
 				force_wallet_full_scan,
 				background_sync_config: Some(sync_intervals.background_sync_config()),
-				..EsploraSyncConfig::default()
+				wallet_sync_parallel_requests: wallet_sync_parallel_requests
+					.unwrap_or(defaults.wallet_sync_parallel_requests),
+				..defaults
 			};
 			builder.set_chain_source_esplora(server_url, Some(sync_config));
 		},

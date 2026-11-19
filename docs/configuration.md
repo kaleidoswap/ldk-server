@@ -223,6 +223,11 @@ seconds; each runs in its own task, and unset ones keep LDK Node's defaults (80,
 
 LDK Node enforces a minimum of 10 seconds for each.
 
+`[esplora]` also takes `wallet_sync_parallel_requests`, the number of concurrent requests an
+on-chain wallet sync makes (default 4, allowed 1 to 64). An incremental sync queries every
+address the wallet has revealed, so its duration grows with the wallet's history. Raise this
+when syncs take longer than a block and the server allows it.
+
 > **Warning:** When using Electrum or Esplora, LDK cannot verify Lightning gossip messages
 > against the blockchain. This means a malicious peer could flood your node with fake channel
 > announcements, consuming memory and disk. If your node is publicly reachable, use bitcoind.

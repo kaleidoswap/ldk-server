@@ -94,6 +94,8 @@ server_url = "https://mempool.space/api"      # Esplora endpoint
 # onchain_wallet_sync_interval_secs = 80
 # lightning_wallet_sync_interval_secs = 30
 # fee_rate_cache_update_interval_secs = 600
+# Optional concurrent requests per on-chain wallet sync, 1 to 64 (Esplora only):
+# wallet_sync_parallel_requests = 4
 
 # LSPS Client Support
 # Repeat this section to register several LSPs. Supported protocols are discovered per
