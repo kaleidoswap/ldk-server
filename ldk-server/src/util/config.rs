@@ -138,6 +138,8 @@ pub enum ChainSource {
 		server_url: String,
 		force_wallet_full_scan: bool,
 		sync_intervals: WalletSyncIntervals,
+		/// Concurrent Esplora requests per on-chain wallet sync. Unset keeps LDK Node's default.
+		wallet_sync_parallel_requests: Option<u32>,
 	},
 }
 
@@ -185,6 +187,7 @@ struct ConfigBuilder {
 	ldk_node_postgres: Option<PostgresStorageConfig>,
 	electrum_url: Option<String>,
 	esplora_url: Option<String>,
+	esplora_wallet_sync_parallel_requests: Option<u32>,
 	sync_intervals: WalletSyncIntervals,
 	bitcoind_rpc_address: Option<String>,
 	bitcoind_rpc_user: Option<String>,
@@ -268,6 +271,7 @@ impl ConfigBuilder {
 
 		if let Some(esplora) = toml.esplora {
 			self.esplora_url = Some(esplora.server_url);
+			self.esplora_wallet_sync_parallel_requests = esplora.wallet_sync_parallel_requests;
 			self.sync_intervals = WalletSyncIntervals {
 				onchain_wallet_sync_interval_secs: esplora.onchain_wallet_sync_interval_secs,
 				lightning_wallet_sync_interval_secs: esplora.lightning_wallet_sync_interval_secs,
@@ -612,6 +616,7 @@ impl ConfigBuilder {
 				server_url: url,
 				force_wallet_full_scan: self.force_wallet_full_scan,
 				sync_intervals: self.sync_intervals,
+				wallet_sync_parallel_requests: self.esplora_wallet_sync_parallel_requests,
 			}
 		} else {
 			return Err(io::Error::new(
@@ -894,6 +899,7 @@ struct EsploraConfig {
 	onchain_wallet_sync_interval_secs: Option<u64>,
 	lightning_wallet_sync_interval_secs: Option<u64>,
 	fee_rate_cache_update_interval_secs: Option<u64>,
+	wallet_sync_parallel_requests: Option<u32>,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -3768,6 +3774,36 @@ mod tests {
 						.fee_rate_cache_update_interval_secs,
 				}
 			);
+		}
+	}
+
+	#[test]
+	fn test_esplora_wallet_sync_parallel_requests() {
+		for (config_file_name, extra, expected) in [
+			(
+				"test_esplora_parallel_requests_set.toml",
+				"wallet_sync_parallel_requests = 16",
+				Some(16),
+			),
+			("test_esplora_parallel_requests_unset.toml", "", None),
+		] {
+			let chain_config = format!(
+				"[node]\nnetwork = \"regtest\"\n\n[esplora]\nserver_url = \"https://mempool.space/api\"\n{extra}\n{}",
+				lsps2_service_config_for_feature()
+			);
+			let storage_path = std::env::temp_dir();
+			fs::write(storage_path.join(config_file_name), chain_config).unwrap();
+			let mut args_config = empty_args_config();
+			args_config.config_file =
+				Some(storage_path.join(config_file_name).to_string_lossy().to_string());
+
+			let config = load_config(&args_config).unwrap();
+			match config.chain_source {
+				ChainSource::Esplora { wallet_sync_parallel_requests, .. } => {
+					assert_eq!(wallet_sync_parallel_requests, expected)
+				},
+				_ => panic!("unexpected chain source"),
+			}
 		}
 	}
 
