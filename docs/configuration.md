@@ -228,6 +228,12 @@ on-chain wallet sync makes (default 4, allowed 1 to 64). An incremental sync que
 address the wallet has revealed, so its duration grows with the wallet's history. Raise this
 when syncs take longer than a block and the server allows it.
 
+`[esplora]` also takes `onchain_wallet_sync_timeout_secs` (default 60) and
+`lightning_wallet_sync_timeout_secs` (default 30). A sync that runs past its timeout is
+abandoned and retried from the start at the next interval, so a wallet whose sync never fits
+stops seeing new deposits and confirmations. Raise the timeout when the log shows
+`Incremental sync of on-chain wallet timed out` on every pass.
+
 > **Warning:** When using Electrum or Esplora, LDK cannot verify Lightning gossip messages
 > against the blockchain. This means a malicious peer could flood your node with fake channel
 > announcements, consuming memory and disk. If your node is publicly reachable, use bitcoind.

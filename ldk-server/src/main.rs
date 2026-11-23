@@ -227,11 +227,13 @@ fn main() {
 			force_wallet_full_scan,
 			sync_intervals,
 			wallet_sync_parallel_requests,
+			sync_timeouts,
 		} => {
 			let defaults = EsploraSyncConfig::default();
 			let sync_config = EsploraSyncConfig {
 				force_wallet_full_scan,
 				background_sync_config: Some(sync_intervals.background_sync_config()),
+				timeouts_config: sync_timeouts.timeouts_config(),
 				wallet_sync_parallel_requests: wallet_sync_parallel_requests
 					.unwrap_or(defaults.wallet_sync_parallel_requests),
 				..defaults

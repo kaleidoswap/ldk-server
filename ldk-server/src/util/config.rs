@@ -18,7 +18,7 @@ use ldk_node::bitcoin::secp256k1::PublicKey;
 use ldk_node::bitcoin::Network;
 use ldk_node::config::{
 	AnchorChannelsConfig, AsyncPaymentsRole, BackgroundSyncConfig, ForwardedPaymentTrackingMode,
-	HRNResolverConfig, HumanReadableNamesConfig,
+	HRNResolverConfig, HumanReadableNamesConfig, SyncTimeoutsConfig,
 };
 use ldk_node::lightning::ln::msgs::SocketAddress;
 use ldk_node::lightning::routing::gossip::NodeAlias;
@@ -140,7 +140,30 @@ pub enum ChainSource {
 		sync_intervals: WalletSyncIntervals,
 		/// Concurrent Esplora requests per on-chain wallet sync. Unset keeps LDK Node's default.
 		wallet_sync_parallel_requests: Option<u32>,
+		sync_timeouts: WalletSyncTimeouts,
 	},
+}
+
+/// Timeouts of a wallet sync, in seconds. Unset timeouts keep LDK Node's defaults.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct WalletSyncTimeouts {
+	pub onchain_wallet_sync_timeout_secs: Option<u64>,
+	pub lightning_wallet_sync_timeout_secs: Option<u64>,
+}
+
+impl WalletSyncTimeouts {
+	pub fn timeouts_config(&self) -> SyncTimeoutsConfig {
+		let defaults = SyncTimeoutsConfig::default();
+		SyncTimeoutsConfig {
+			onchain_wallet_sync_timeout_secs: self
+				.onchain_wallet_sync_timeout_secs
+				.unwrap_or(defaults.onchain_wallet_sync_timeout_secs),
+			lightning_wallet_sync_timeout_secs: self
+				.lightning_wallet_sync_timeout_secs
+				.unwrap_or(defaults.lightning_wallet_sync_timeout_secs),
+			..defaults
+		}
+	}
 }
 
 /// Background sync intervals of a transaction-based chain source, in seconds. Unset intervals
@@ -188,6 +211,7 @@ struct ConfigBuilder {
 	electrum_url: Option<String>,
 	esplora_url: Option<String>,
 	esplora_wallet_sync_parallel_requests: Option<u32>,
+	esplora_sync_timeouts: WalletSyncTimeouts,
 	sync_intervals: WalletSyncIntervals,
 	bitcoind_rpc_address: Option<String>,
 	bitcoind_rpc_user: Option<String>,
@@ -272,6 +296,10 @@ impl ConfigBuilder {
 		if let Some(esplora) = toml.esplora {
 			self.esplora_url = Some(esplora.server_url);
 			self.esplora_wallet_sync_parallel_requests = esplora.wallet_sync_parallel_requests;
+			self.esplora_sync_timeouts = WalletSyncTimeouts {
+				onchain_wallet_sync_timeout_secs: esplora.onchain_wallet_sync_timeout_secs,
+				lightning_wallet_sync_timeout_secs: esplora.lightning_wallet_sync_timeout_secs,
+			};
 			self.sync_intervals = WalletSyncIntervals {
 				onchain_wallet_sync_interval_secs: esplora.onchain_wallet_sync_interval_secs,
 				lightning_wallet_sync_interval_secs: esplora.lightning_wallet_sync_interval_secs,
@@ -617,6 +645,7 @@ impl ConfigBuilder {
 				force_wallet_full_scan: self.force_wallet_full_scan,
 				sync_intervals: self.sync_intervals,
 				wallet_sync_parallel_requests: self.esplora_wallet_sync_parallel_requests,
+				sync_timeouts: self.esplora_sync_timeouts,
 			}
 		} else {
 			return Err(io::Error::new(
@@ -900,6 +929,8 @@ struct EsploraConfig {
 	lightning_wallet_sync_interval_secs: Option<u64>,
 	fee_rate_cache_update_interval_secs: Option<u64>,
 	wallet_sync_parallel_requests: Option<u32>,
+	onchain_wallet_sync_timeout_secs: Option<u64>,
+	lightning_wallet_sync_timeout_secs: Option<u64>,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -3805,6 +3836,51 @@ mod tests {
 				_ => panic!("unexpected chain source"),
 			}
 		}
+	}
+
+	#[test]
+	fn test_esplora_wallet_sync_timeouts() {
+		for (config_file_name, extra, expected) in [
+			(
+				"test_esplora_sync_timeouts_set.toml",
+				"onchain_wallet_sync_timeout_secs = 180\nlightning_wallet_sync_timeout_secs = 90",
+				WalletSyncTimeouts {
+					onchain_wallet_sync_timeout_secs: Some(180),
+					lightning_wallet_sync_timeout_secs: Some(90),
+				},
+			),
+			("test_esplora_sync_timeouts_unset.toml", "", WalletSyncTimeouts::default()),
+		] {
+			let chain_config = format!(
+				"[node]\nnetwork = \"regtest\"\n\n[esplora]\nserver_url = \"https://mempool.space/api\"\n{extra}\n{}",
+				lsps2_service_config_for_feature()
+			);
+			let storage_path = std::env::temp_dir();
+			fs::write(storage_path.join(config_file_name), chain_config).unwrap();
+			let mut args_config = empty_args_config();
+			args_config.config_file =
+				Some(storage_path.join(config_file_name).to_string_lossy().to_string());
+
+			let config = load_config(&args_config).unwrap();
+			match config.chain_source {
+				ChainSource::Esplora { sync_timeouts, .. } => assert_eq!(sync_timeouts, expected),
+				_ => panic!("unexpected chain source"),
+			}
+		}
+	}
+
+	#[test]
+	fn test_wallet_sync_timeouts_keep_ldk_node_defaults_for_the_rest() {
+		let defaults = SyncTimeoutsConfig::default();
+		assert_eq!(WalletSyncTimeouts::default().timeouts_config(), defaults);
+		assert_eq!(
+			WalletSyncTimeouts {
+				onchain_wallet_sync_timeout_secs: Some(180),
+				lightning_wallet_sync_timeout_secs: None,
+			}
+			.timeouts_config(),
+			SyncTimeoutsConfig { onchain_wallet_sync_timeout_secs: 180, ..defaults }
+		);
 	}
 
 	#[test]
