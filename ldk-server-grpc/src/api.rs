@@ -2003,7 +2003,65 @@ pub struct Bolt12FindRouteResponse {
 #[cfg_attr(feature = "serde", serde(default))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GetFinancialInventoryRequest {}
+pub struct GetFinancialInventoryRequest {
+	/// Unset: the whole durable payment history.
+	/// Set: only payments changed since the reader's last delta.
+	#[prost(message, optional, tag = "1")]
+	pub payment_delta: ::core::option::Option<PaymentDeltaRequest>,
+}
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PaymentDeltaRequest {
+	/// Newest payment ID the reader already holds; unset on its first read.
+	#[prost(string, optional, tag = "1")]
+	pub since: ::core::option::Option<::prost::alloc::string::String>,
+	/// Payment IDs to read again, e.g. those the reader still holds as pending.
+	#[prost(string, repeated, tag = "2")]
+	pub reread: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+	/// Continue a backfill of older history.
+	#[prost(bool, tag = "3")]
+	pub backfill: bool,
+	/// Resume token from the previous delta's `next_backfill`; unset starts from the newest.
+	#[prost(string, optional, tag = "4")]
+	pub backfill_token: ::core::option::Option<::prost::alloc::string::String>,
+	/// Store pages to read for each of the head scan and the backfill.
+	#[prost(uint32, tag = "5")]
+	pub page_budget: u32,
+}
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PaymentDelta {
+	/// The `since` the reader sent.
+	#[prost(string, optional, tag = "1")]
+	pub since: ::core::option::Option<::prost::alloc::string::String>,
+	/// Newest payment ID at the snapshot revision; the reader's next `since`.
+	#[prost(string, optional, tag = "2")]
+	pub head: ::core::option::Option<::prost::alloc::string::String>,
+	/// False when `since` no longer exists: rebuild, do not extend, the reader's history.
+	#[prost(bool, tag = "3")]
+	pub since_found: bool,
+	/// IDs created after `since`, newest first.
+	#[prost(string, repeated, tag = "4")]
+	pub created: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+	/// Requested re-reads that no longer exist.
+	#[prost(string, repeated, tag = "5")]
+	pub missing: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+	/// IDs read for the backfill, newest first.
+	#[prost(string, repeated, tag = "6")]
+	pub backfilled: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+	/// Whether a backfill was requested.
+	#[prost(bool, tag = "7")]
+	pub backfill_requested: bool,
+	/// Where the next backfill resumes; unset with `backfill_requested` means it is complete.
+	#[prost(string, optional, tag = "8")]
+	pub next_backfill: ::core::option::Option<::prost::alloc::string::String>,
+}
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 #[cfg_attr(feature = "serde", serde(default))]
@@ -2281,9 +2339,13 @@ pub struct GetFinancialInventoryResponse {
 	/// Last successful Lightning sync, UNIX seconds.
 	#[prost(uint64, optional, tag = "16")]
 	pub latest_lightning_sync: ::core::option::Option<u64>,
-	/// Sanitized payment history in the same atomic boundary (schema 2).
+	/// Sanitized payment history in the same atomic boundary (schema 2), or only the
+	/// payments selected by `payment_delta`.
 	#[prost(message, repeated, tag = "17")]
 	pub payments: ::prost::alloc::vec::Vec<InventoryPayment>,
+	/// Set when `payments` holds only a delta: how it was selected.
+	#[prost(message, optional, tag = "18")]
+	pub payment_delta: ::core::option::Option<PaymentDelta>,
 }
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]

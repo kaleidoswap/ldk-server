@@ -14,10 +14,35 @@ use ldk_server_grpc::api::*;
 use crate::api::error::LdkServerError;
 use crate::service::Context;
 pub(crate) async fn handle_get_financial_inventory_request(
-	context: Arc<Context>, _request: GetFinancialInventoryRequest,
+	context: Arc<Context>, request: GetFinancialInventoryRequest,
 ) -> Result<GetFinancialInventoryResponse, LdkServerError> {
-	let inventory = context.node.financial_inventory_durable().await;
+	let inventory = match request.payment_delta {
+		Some(delta) => {
+			context
+				.node
+				.financial_inventory_delta(ldk_node::inventory::PaymentDeltaRequest {
+					since: delta.since,
+					reread: delta.reread,
+					backfill: delta.backfill.then_some(delta.backfill_token),
+					page_budget: delta.page_budget,
+				})
+				.await
+		},
+		None => context.node.financial_inventory_durable().await,
+	};
 	Ok(convert_financialinventory(inventory))
+}
+fn convert_paymentdelta(v: ldk_node::inventory::PaymentDelta) -> PaymentDelta {
+	PaymentDelta {
+		since: v.since,
+		head: v.head,
+		since_found: v.since_found,
+		created: v.created,
+		missing: v.missing,
+		backfilled: v.backfilled,
+		backfill_requested: v.backfill_requested,
+		next_backfill: v.next_backfill,
+	}
 }
 fn convert_inventorytip(v: ldk_node::inventory::InventoryTip) -> InventoryTip {
 	InventoryTip { hash: v.hash, height: v.height }
@@ -138,6 +163,7 @@ fn convert_financialinventory(
 			.collect(),
 		latest_wallet_sync: v.latest_wallet_sync,
 		latest_lightning_sync: v.latest_lightning_sync,
+		payment_delta: v.payment_delta.map(convert_paymentdelta),
 	}
 }
 

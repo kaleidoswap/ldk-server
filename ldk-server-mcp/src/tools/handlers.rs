@@ -347,7 +347,7 @@ pub async fn handle_get_financial_inventory(
 	client: &LdkServerClient, _args: Value,
 ) -> Result<Value, McpError> {
 	let response = client
-		.get_financial_inventory(GetFinancialInventoryRequest {})
+		.get_financial_inventory(GetFinancialInventoryRequest::default())
 		.await
 		.map_err(McpError::from)?;
 	serialize_response(response)
