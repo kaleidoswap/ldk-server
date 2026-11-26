@@ -1397,7 +1397,41 @@ message Bolt12FindRouteResponse {
 }
 
 // Read-only evidence, not a claim of globally atomic or complete ownership.
-message GetFinancialInventoryRequest {}
+message GetFinancialInventoryRequest {
+  // Unset: the whole durable payment history.
+  // Set: only payments changed since the reader's last delta.
+  optional PaymentDeltaRequest payment_delta = 1;
+}
+message PaymentDeltaRequest {
+  // Newest payment ID the reader already holds; unset on its first read.
+  optional string since = 1;
+  // Payment IDs to read again, e.g. those the reader still holds as pending.
+  repeated string reread = 2;
+  // Continue a backfill of older history.
+  bool backfill = 3;
+  // Resume token from the previous delta's `next_backfill`; unset starts from the newest.
+  optional string backfill_token = 4;
+  // Store pages to read for each of the head scan and the backfill.
+  uint32 page_budget = 5;
+}
+message PaymentDelta {
+  // The `since` the reader sent.
+  optional string since = 1;
+  // Newest payment ID at the snapshot revision; the reader's next `since`.
+  optional string head = 2;
+  // False when `since` no longer exists: rebuild, do not extend, the reader's history.
+  bool since_found = 3;
+  // IDs created after `since`, newest first.
+  repeated string created = 4;
+  // Requested re-reads that no longer exist.
+  repeated string missing = 5;
+  // IDs read for the backfill, newest first.
+  repeated string backfilled = 6;
+  // Whether a backfill was requested.
+  bool backfill_requested = 7;
+  // Where the next backfill resumes; unset with `backfill_requested` means it is complete.
+  optional string next_backfill = 8;
+}
 message InventoryTip {
   // Block hash in display order.
   string hash = 1;
@@ -1553,8 +1587,11 @@ message GetFinancialInventoryResponse {
   optional uint64 latest_wallet_sync = 15;
   // Last successful Lightning sync, UNIX seconds.
   optional uint64 latest_lightning_sync = 16;
-  // Sanitized payment history in the same atomic boundary (schema 2).
+  // Sanitized payment history in the same atomic boundary (schema 2), or only the
+  // payments selected by `payment_delta`.
   repeated InventoryPayment payments = 17;
+  // Set when `payments` holds only a delta: how it was selected.
+  optional PaymentDelta payment_delta = 18;
 }
 
 message InventoryPayment {

@@ -953,7 +953,7 @@ async fn main() {
 		},
 		Commands::GetFinancialInventory => {
 			handle_response_result::<_, GetFinancialInventoryResponse>(
-				client.get_financial_inventory(GetFinancialInventoryRequest {}).await,
+				client.get_financial_inventory(GetFinancialInventoryRequest::default()).await,
 			);
 		},
 		Commands::GetBalances => {
