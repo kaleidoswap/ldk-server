@@ -21,7 +21,7 @@ ldk-server-client = { path = "../ldk-server-client" }
 ldk-server-grpc = { path = "../ldk-server-grpc", features = ["serde"] }
 serde_json = "1.0"
 hex-conservative = { version = "0.2", features = ["std"] }
-ldk-node = { git = "https://github.com/kaleidoswap/ldk-node", rev = "5efa734a20e5f6db11e53c42b4ecdd91e88fbfc5" }
+ldk-node = { git = "https://github.com/kaleidoswap/ldk-node", rev = "f9040f7cc4b301f6831696a2b4e78c55bbe949ed" }
 
 # ldk-node is built against a rust-lightning fork with read-only accounting snapshots;
 # redirect every crate that names upstream rust-lightning to the same revision.
